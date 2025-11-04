@@ -1,34 +1,35 @@
 version: '3.8'
 
 services:
-  # Kafka 服务（保持现有配置，添加内存限制）
   kafka:
-    image: bitnami/kafka:latest
+    image: apache/kafka:3.7.1  # 更换为官方 Apache Kafka 镜像
     container_name: kafka
     restart: always
+    user: "root"
     environment:
-      - KAFKA_ENABLE_KRAFT=yes
-      - KAFKA_CFG_PROCESS_ROLES=broker,controller
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
-      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
-      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_PROCESS_ROLES=broker,controller  # 调整环境变量前缀
+      - KAFKA_NODE_ID=1
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
       - KAFKA_HEAP_OPTS=-Xmx512m -Xms512m
     ports:
       - "9092:9092"
     volumes:
-      - kafka_data:/bitnami/kafka
+      - kafka_data:/tmp/kafka-logs  # Apache Kafka 默认数据目录不同
     networks:
       - app_net
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
-  # Kafka UI（保持现有配置）
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -43,9 +44,8 @@ services:
     networks:
       - app_net
 
-  # PostgreSQL（保持现有配置）
   postgres:
-    image: postgres:15.2
+    image: postgres:15
     container_name: postgres
     restart: always
     environment:
@@ -59,11 +59,13 @@ services:
     networks:
       - app_net
 
-  # 应用服务
   producer:
     build:
       context: ./producer
       dockerfile: Dockerfile
+      args:
+        http_proxy: http://172.26.48.1:7890
+        https_proxy: http://172.26.48.1:7890
     depends_on:
       - kafka
     environment:
@@ -73,12 +75,16 @@ services:
     build:
       context: ./consumer
       dockerfile: Dockerfile
+      args:
+        http_proxy: http://172.26.48.1:7890
+        https_proxy: http://172.26.48.1:7890
     depends_on:
       - kafka
       - postgres
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/streamdb
+
 
 networks:
   app_net:
@@ -87,3 +93,4 @@ networks:
 volumes:
   kafka_data:
   postgres_data:
+
