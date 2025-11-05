@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.ChatMessage;
 
 /**
@@ -20,13 +21,12 @@ import org.zewang.common.dto.ChatMessage;
 @RequiredArgsConstructor
 public class MessageProducerService {
 
-    private final KafkaTemplate<String, ChatMessage> kafkaTemplate;
-    private static final String TOPIC_NAME = "chat-messages";
+    private final KafkaTemplate<String, ChatMessage> kafkaTemplate;;
 
     public void sendMessage(ChatMessage message) {
         try {
             // 异步发送
-            kafkaTemplate.send(TOPIC_NAME, message.getUserId(), message)
+            kafkaTemplate.send(KafkaConstants.CHAT_MESSAGES_TOPIC, message.getUserId(), message)
                     .whenComplete((result, ex) -> {
                         if (ex == null) {
                             log.debug("消息发送成功：user={}, timestamp={}",
