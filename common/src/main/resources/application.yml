@@ -2,9 +2,9 @@ spring:
   application:
     name: common
 
-#  # Kafka 配置（供其他模块引用）
-#  kafka:
-#    bootstrap-servers: localhost:9092
+  # Kafka 配置（供其他模块引用）
+  kafka:
+    bootstrap-servers: localhost:9092
 #    producer:
 #      key-serializer: org.apache.kafka.common.serialization.StringSerializer
 #      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
