@@ -2,6 +2,8 @@ package org.zewang.producer.service;
 
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,11 +49,13 @@ public class ScheduledMessageProducer {
     public void produceMessages() {
         int messageCount = 5 + random.nextInt(6); // 5-10
         log.info("正在处理 {} 消息...", messageCount);
+        List<ChatMessage> messages = new ArrayList<>(messageCount);
 
         for (int i = 0; i < messageCount; i++) {
-            ChatMessage message = createRandomChatMessage();
-            messageProducerService.sendMessage(message);
+            messages.add(createRandomChatMessage());
         }
+
+        messages.forEach(messageProducerService::sendMessage);
     }
 
     private ChatMessage createRandomChatMessage() {

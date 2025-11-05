@@ -21,12 +21,20 @@ import org.zewang.common.dto.ChatMessage;
 public class MessageProducerService {
 
     private final KafkaTemplate<String, ChatMessage> kafkaTemplate;
-
     private static final String TOPIC_NAME = "chat-messages";
 
     public void sendMessage(ChatMessage message) {
         try {
-            kafkaTemplate.send(TOPIC_NAME, message.getUserId(), message);
+            // 异步发送
+            kafkaTemplate.send(TOPIC_NAME, message.getUserId(), message)
+                    .whenComplete((result, ex) -> {
+                        if (ex == null) {
+                            log.debug("消息发送成功：user={}, timestamp={}",
+                                message.getUserId(), message.getTimestamp());
+                        } else {
+                            log.error("消息发送失败: {}", ex.getMessage(), ex);
+                        }
+                    });
             log.info("发送消息给user: {} at {}", message.getUserId(), message.getTimestamp());
         } catch (Exception e) {
             log.error("发送消息失败: {}", e.getMessage(), e);

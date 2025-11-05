@@ -35,6 +35,16 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+
+        // 调优配置
+        props.put(ProducerConfig.ACKS_CONFIG, "1"); // 1表示只需要leader确认，提高吞吐量
+        props.put(ProducerConfig.RETRIES_CONFIG, 3); // 重试次数
+        props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384); // 批处理大小(16KB)
+        props.put(ProducerConfig.LINGER_MS_CONFIG, 5); // 批处理延迟时间(5ms)
+        props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432); // 32MB发送缓冲区
+        props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy"); // 启用压缩
+        props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 5); // 每个连接最大请求数
+
         return props;
     }
 
