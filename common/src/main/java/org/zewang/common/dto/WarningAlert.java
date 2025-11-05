@@ -17,7 +17,7 @@ import lombok.Setter;
 public class WarningAlert {
     private String userId;
     private long windowEnd; // 窗口结束时间戳
-    private double averagedScore;
+    private double averageScore;
     private String alertMessage;
 
 }
