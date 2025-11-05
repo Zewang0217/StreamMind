@@ -24,6 +24,12 @@
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
+<!--    javaweb-->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
     <!-- Lombok (开发便利) -->
     <dependency>
       <groupId>org.projectlombok</groupId>
