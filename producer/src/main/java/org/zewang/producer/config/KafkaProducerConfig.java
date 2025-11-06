@@ -52,11 +52,8 @@ public class KafkaProducerConfig {
 
     @Bean
     public ProducerFactory<String, ChatMessage> producerFactory() {
-        DefaultKafkaProducerFactory<String, ChatMessage> factory =
-            new DefaultKafkaProducerFactory<>(producerConfigs());
-        // 启用事务支持
-        factory.setTransactionIdPrefix("producer-tx-");
-        return factory;
+        // 移除事务相关配置，直接返回默认的ProducerFactory
+        return new DefaultKafkaProducerFactory<>(producerConfigs());
     }
 
     @Bean
