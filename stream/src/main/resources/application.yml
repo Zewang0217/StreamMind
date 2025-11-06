@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: stream
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+logging:
+  level:
+    org.apache.kafka.streams: INFO
+    org.zewang.stream: DEBUG
