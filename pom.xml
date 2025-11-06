@@ -30,7 +30,6 @@
   </scm>
   <properties>
     <java.version>21</java.version>
-    <spring.boot.version>3.2.0</spring.boot.version> <!-- 可按需修改 -->
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,14 +45,13 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Spring Boot BOM -->
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${spring.boot.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+<!--      &lt;!&ndash; Spring Boot BOM &ndash;&gt;-->
+<!--      <dependency>-->
+<!--        <groupId>org.springframework.boot</groupId>-->
+<!--        <artifactId>spring-boot-dependencies</artifactId>-->
+<!--        <type>pom</type>-->
+<!--        <scope>import</scope>-->
+<!--      </dependency>-->
 
       <!-- Kafka clients version centralized -->
       <dependency>
@@ -67,12 +65,11 @@
   <build>
     <pluginManagement>
       <plugins>
-        <!-- Spring Boot Maven Plugin -->
-        <plugin>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-maven-plugin</artifactId>
-          <version>${spring.boot.version}</version>
-        </plugin>
+<!--        &lt;!&ndash; Spring Boot Maven Plugin &ndash;&gt;-->
+<!--        <plugin>-->
+<!--          <groupId>org.springframework.boot</groupId>-->
+<!--          <artifactId>spring-boot-maven-plugin</artifactId>-->
+<!--        </plugin>-->
 
         <!-- Compiler plugin -->
         <plugin>

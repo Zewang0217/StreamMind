@@ -28,7 +28,7 @@ import org.zewang.common.dto.ChatMessage;
 @Configuration
 public class KafkaProducerConfig {
 
-    @Value("${kafka.bootstrap-servers}")
+    @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
     @Bean
@@ -52,7 +52,11 @@ public class KafkaProducerConfig {
 
     @Bean
     public ProducerFactory<String, ChatMessage> producerFactory() {
-        return new DefaultKafkaProducerFactory<>(producerConfigs());
+        DefaultKafkaProducerFactory<String, ChatMessage> factory =
+            new DefaultKafkaProducerFactory<>(producerConfigs());
+        // 启用事务支持
+        factory.setTransactionIdPrefix("producer-tx-");
+        return factory;
     }
 
     @Bean
