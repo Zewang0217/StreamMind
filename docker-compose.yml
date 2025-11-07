@@ -13,23 +13,38 @@ services:
       # 启用三类监听器
       - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
       # 关键点：advertised listeners
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://host.docker.internal:9094
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
       - KAFKA_HEAP_OPTS=-Xmx512m -Xms512m
     ports:
-      - "9094:9094"
+      - "9092:9092"  # 添加内部端口映射，供本地IDE使用
+      - "9094:9094"  # 外部端口映射，供容器内服务使用
     volumes:
       - kafka_data:/tmp/kafka-logs
     networks:
       - app_net
 
 
-
+  # 添加 stream 服务
+  stream:
+    build:
+      context: ./stream
+      dockerfile: Dockerfile
+      args:
+        http_proxy: http://172.26.48.1:7890
+        https_proxy: http://172.26.48.1:7890
+    depends_on:
+      - kafka
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - app_net
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -69,8 +84,14 @@ services:
         https_proxy: http://172.26.48.1:7890
     depends_on:
       - kafka
+      - postgres
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/streamdb
+    ports:
+      - "8083:8080"
+    networks:
+      - app_net
 
   consumer:
     build:

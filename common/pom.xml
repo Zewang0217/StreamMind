@@ -50,6 +50,13 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- 添加测试依赖 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- 如果你要自定义 Kafka Serde，可放实现类在这里 -->
   </dependencies>
 

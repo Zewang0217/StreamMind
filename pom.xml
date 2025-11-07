@@ -33,7 +33,7 @@
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <kafka.clients.version>3.5.0</kafka.clients.version>
+    <kafka.version>3.9.1</kafka.version>
   </properties>
 
   <modules>
@@ -53,11 +53,17 @@
 <!--        <scope>import</scope>-->
 <!--      </dependency>-->
 
-      <!-- Kafka clients version centralized -->
+      <!-- 统一管理 Kafka 相关依赖版本 -->
       <dependency>
         <groupId>org.apache.kafka</groupId>
         <artifactId>kafka-clients</artifactId>
-        <version>${kafka.clients.version}</version>
+        <version>${kafka.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-streams</artifactId>
+        <version>${kafka.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
