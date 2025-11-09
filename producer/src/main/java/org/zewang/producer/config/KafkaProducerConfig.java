@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,8 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.ChatMessage;
+import org.zewang.common.dto.WarningAlert;
+import org.zewang.common.serde.JsonSerde;
 
 /**
  * @author "Zewang"
@@ -60,6 +63,8 @@ public class KafkaProducerConfig {
     public KafkaTemplate<String, ChatMessage> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
+
+
 
     // 创建 chat-messages topic  => 在配置文件启用自动创建topic
 //    @Bean

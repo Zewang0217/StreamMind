@@ -1,10 +1,13 @@
 // src/main/java/org/zewang/stream/config/KafkaStreamConfig.java
 package org.zewang.stream.config;
 
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafkaStreams; // 更准确的注解
@@ -12,10 +15,13 @@ import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
 import org.zewang.common.dto.ChatMessage;
 import org.zewang.common.dto.SentimentScore;
+import org.zewang.common.dto.WarningAlert;
 import org.zewang.common.serde.JsonSerde; // 使用 common 模块中的自定义 JsonSerde
 
 import java.util.HashMap;
 import java.util.Map;
+import org.zewang.stream.service.SentimentAnalysisProcessor;
+import org.zewang.stream.service.WarningAlertProcessor;
 
 /**
  * @author "Zewang"
@@ -30,6 +36,24 @@ public class KafkaStreamConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
+
+    private WarningAlertProcessor warningAlertProcessor;
+    private SentimentAnalysisProcessor sentimentAnalysisProcessor;
+
+    private final ApplicationContext applicationContext; // 用于获取 Spring 上下文
+
+    public KafkaStreamConfig(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
+
+    @PostConstruct
+    public void init() {
+        // 延迟获取Bean对象
+//        this.warningAlertProcessor = applicationContext.getBean(WarningAlertProcessor.class);
+//        this.sentimentAnalysisProcessor = applicationContext.getBean(SentimentAnalysisProcessor.class);
+//        sentimentAnalysisProcessor.buildTopology();
+//        warningAlertProcessor.buildTopology();
+    }
 
     @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
     public KafkaStreamsConfiguration kafkaStreamsConfig() {
@@ -55,5 +79,11 @@ public class KafkaStreamConfig {
     @Bean
     public Serde<SentimentScore> sentimentScoreSerde() {
         return new JsonSerde<>(SentimentScore.class);
+    }
+
+    // 定义 WarningAlert 的 Serde
+    @Bean
+    public Serde<WarningAlert> warningAlertSerde() {
+        return new JsonSerde<>(WarningAlert.class);
     }
 }
