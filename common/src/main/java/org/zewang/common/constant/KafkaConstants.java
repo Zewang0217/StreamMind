@@ -15,6 +15,8 @@ public class KafkaConstants {
     public static final String CHAT_MESSAGES_TOPIC = "chat-messages";
     public static final String SENTIMENT_SCORES_TOPIC = "sentiment-scores";
     public static final String WARNING_ALERTS_TOPIC = "warning-alerts";
+    public static final String SOCIAL_MESSAGES = "social-messages";
+
 
     // 默认配置值
     public static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";

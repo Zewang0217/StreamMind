@@ -1,4 +1,4 @@
-package org.zewang.common.dto;
+package org.zewang.common.dto.social_message;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -15,7 +15,7 @@ import lombok.Builder;
 
 @Builder // 作用: 创建对象
 public record SocialMessage (
-    String messageId,
+    String messageId, // 注意全局唯一性
     String source,
     String topic,
     String userId,
