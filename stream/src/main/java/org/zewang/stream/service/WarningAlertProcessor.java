@@ -1,12 +1,12 @@
 package org.zewang.stream.service;
 
 
-import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -15,10 +15,12 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.kstream.Suppressed.BufferConfig;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.kstream.WindowedSerdes;
+import org.apache.kafka.streams.state.Stores;
+import org.apache.kafka.streams.state.WindowBytesStoreSupplier;
+import org.apache.kafka.streams.state.WindowStore;
 import org.springframework.stereotype.Component;
 import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.SentimentScore;
@@ -47,26 +49,36 @@ public class WarningAlertProcessor {
         // 检查是否有消费者订阅该 topic
         log.info("尝试从 topic '{}' 读取数据", KafkaConstants.SENTIMENT_SCORES_TOPIC);
 
-
-
-        // 1. 从 sentiment-scores 读取数据
+        // 从 sentiment-scores 读取数据
         KStream<String, SentimentScore> sentimentScores = streamsBuilder
             .stream(KafkaConstants.SENTIMENT_SCORES_TOPIC, Consumed.with(Serdes.String(), sentimentScoreSerde))
             .peek((key, value) -> log.debug("接收到情感分数数据: userId={}, score={}", key, value.getSentimentScore()));
 
         log.info("已建立从 sentiment-scores 读取数据的流，topic: {}", KafkaConstants.SENTIMENT_SCORES_TOPIC);
 
-        // 添加计数器来跟踪是否有数据流入
-        sentimentScores = sentimentScores.peek((key, value) -> {
-            log.info(">>> 接收到情感分数数据: userId={}, score={}, timestamp={}",
-                key, value.getSentimentScore(), value.getTimestamp());
-        });
+        Duration windowSize = Duration.ofSeconds(10);
+        Duration gracePeriod = Duration.ofSeconds(5);
+        Duration advanceBy = Duration.ofSeconds(5);
 
         // 使用 hopping window: 10s 窗口，5s 宽
         TimeWindows timeWindows = TimeWindows.ofSizeAndGrace(Duration.ofSeconds(10), Duration.ofSeconds(5))
             .advanceBy(Duration.ofSeconds(5));
 
         KGroupedStream<String, SentimentScore> groupedStream = sentimentScores.groupByKey();
+
+        Duration retentionPeriod = Duration.ofSeconds(30);
+
+
+        WindowBytesStoreSupplier sumStoreSupplier = Stores.inMemoryWindowStore(
+            "in-memory-sum-store", // 唯一名称
+            retentionPeriod,
+            windowSize,
+            false // retainDuplicates
+        );
+        Materialized<String, Double, WindowStore<Bytes, byte[]>> sumMaterialized =
+            Materialized.as(sumStoreSupplier) // <--- 修复：使用 'as(supplier)'
+                .withKeySerde(Serdes.String())   // <--- 链接 .with...
+                .withValueSerde(Serdes.Double()); // <--- 链接 .with...
 
         // 计算总分
         KTable<Windowed<String>, Double> sumScores = groupedStream
@@ -78,17 +90,30 @@ public class WarningAlertProcessor {
                     log.debug("累计分数计算: key={}, value={}, aggregate={}", key, value.getSentimentScore(), newAggregate);
                     return newAggregate;
                 },
-                Materialized.with(Serdes.String(), Serdes.Double())
+                sumMaterialized // 5. 【替换】使用新的
             )
             .mapValues((readOnlyKey, value) -> {
                 log.debug("窗口总分计算完成: window={}, sum={}", readOnlyKey, value);
                 return value;
             });
 
+        WindowBytesStoreSupplier countStoreSupplier = Stores.inMemoryWindowStore(
+            "in-memory-count-store", // 唯一名称
+            retentionPeriod,
+            windowSize, // 10s
+            false
+        );
+        Materialized<String, Long, WindowStore<Bytes, byte[]>> countMaterialized =
+            Materialized.as(countStoreSupplier) // <--- 修复：使用 'as(supplier)'
+                .withKeySerde(Serdes.String())    // <--- 链接 .with...
+                .withValueSerde(Serdes.Long());     // <--- 链接 .with...
+
         // 计算消息数量
         KTable<Windowed<String>, Long> countScores = groupedStream
             .windowedBy(timeWindows)
-            .count(Materialized.with(Serdes.String(), Serdes.Long()))
+            .count(
+                countMaterialized // 8. 【替换】使用新的
+            )
             .mapValues((readOnlyKey, value) -> {
                 log.debug("窗口计数: window={}, count={}", readOnlyKey, value);
                 return value;

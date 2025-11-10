@@ -1,30 +1,19 @@
 // src/main/java/org/zewang/stream/config/KafkaStreamConfig.java
 package org.zewang.stream.config;
 
-import jakarta.annotation.PostConstruct;
 import java.nio.file.Paths;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.web.ServerProperties.Netty;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.kafka.annotation.EnableKafkaStreams; // 更准确的注解
 import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
-import org.zewang.common.constant.KafkaConstants;
-import org.zewang.common.dto.ChatMessage;
-import org.zewang.common.dto.SentimentScore;
-import org.zewang.common.dto.WarningAlert;
 import org.zewang.common.serde.JsonSerde; // 使用 common 模块中的自定义 JsonSerde
 
 import java.util.HashMap;
