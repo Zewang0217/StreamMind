@@ -41,36 +41,46 @@ import org.zewang.stream.service.WarningAlertProcessor;
 @Slf4j
 @Configuration
 @EnableKafkaStreams // 启用 Kafka Streams
+@RequiredArgsConstructor
 public class KafkaStreamConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    private WarningAlertProcessor warningAlertProcessor;
-    private SentimentAnalysisProcessor sentimentAnalysisProcessor;
-
-    private final ApplicationContext applicationContext; // 用于获取 Spring 上下文
-
-    public KafkaStreamConfig(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
-
-    @PostConstruct
-    public void init() {
-        // 延迟获取Bean对象
-//        this.warningAlertProcessor = applicationContext.getBean(WarningAlertProcessor.class);
-//        this.sentimentAnalysisProcessor = applicationContext.getBean(SentimentAnalysisProcessor.class);
-//        sentimentAnalysisProcessor.buildTopology();
-//        warningAlertProcessor.buildTopology();
-    }
+    private final WarningAlertProcessor warningAlertProcessor;
+    private final SentimentAnalysisProcessor sentimentAnalysisProcessor;
 
     @Bean
-    public KafkaStreams kafkaStreams(StreamsBuilder streamsBuilder) {
+    public KafkaStreams kafkaStreams(StreamsBuilder streamsBuilder) { // 7. 注入 Spring 默认的 builder
         KafkaStreamsConfiguration config = kafkaStreamsConfig();
+
+        // 8.【关键】在这里按顺序构建拓扑
+        log.info("KafkaStreamConfig: 构建情感分析拓扑...");
+        sentimentAnalysisProcessor.buildTopology(streamsBuilder);
+
+        log.info("KafkaStreamConfig: 构建预警处理器拓扑...");
+        warningAlertProcessor.buildTopology(streamsBuilder);
+
+        log.info("KafkaStreamConfig: 所有拓扑构建完毕，正在创建 KafkaStreams 实例...");
+
+        // 9. 使用配置和已构建的 builder 来创建实例
         KafkaStreams kafkaStreams = new KafkaStreams(
             streamsBuilder.build(),
             config.asProperties()
         );
+
+        // 10. 添加状态监听（可选，但推荐）
+        kafkaStreams.setStateListener((newState, oldState) -> {
+            log.info("Kafka Streams 状态变化: {} -> {}", oldState, newState);
+        });
+
+        // 11. 手动启动 Kafka Streams
+        kafkaStreams.start();
+
+        // 12. 注册一个关闭钩子，以便在 Spring 应用关闭时优雅地关闭 Kafka Streams
+        Runtime.getRuntime().addShutdownHook(new Thread(kafkaStreams::close));
+
+        log.info("Kafka Streams 已启动。");
         return kafkaStreams;
     }
 
@@ -82,7 +92,7 @@ public class KafkaStreamConfig {
         // 使用 common 模块中定义的 Serdes
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, JsonSerde.class.getName());
-        props.put(StreamsConfig.STATE_DIR_CONFIG, "/tmp/kafka-streams");
+        props.put(StreamsConfig.STATE_DIR_CONFIG, "streams-state-dir"); // 修改为这行
         props.put(StreamsConfig.RETRIES_CONFIG, 3);
         props.put(StreamsConfig.RETRY_BACKOFF_MS_CONFIG, 1000);
 
@@ -94,61 +104,5 @@ public class KafkaStreamConfig {
         return new KafkaStreamsConfiguration(props);
     }
 
-    @EventListener
-    public void handleContextRefresh(ContextRefreshedEvent event) {
-        ApplicationContext applicationContext = event.getApplicationContext();
-        StreamsBuilder streamsBuilder = applicationContext.getBean(StreamsBuilder.class);
 
-        // 确保这些 Bean 存在
-        Serde<SentimentScore> sentimentScoreSerde = sentimentScoreSerde();
-        Serde<WarningAlert> warningAlertSerde = warningAlertSerde();
-        Serde<ChatMessage> chatMessageSerde = chatMessageSerde();
-
-        // 手动创建处理器实例
-        SentimentAnalysisProcessor sentimentProcessor = new SentimentAnalysisProcessor(
-            streamsBuilder, chatMessageSerde, sentimentScoreSerde);
-
-        WarningAlertProcessor warningProcessor = new WarningAlertProcessor(
-            streamsBuilder, sentimentScoreSerde, warningAlertSerde);
-
-        // 构建拓扑
-        sentimentProcessor.buildTopology();
-        warningProcessor.buildTopology();
-
-        // 添加状态监听
-        KafkaStreams kafkaStreams = event.getApplicationContext().getBean(KafkaStreams.class);
-        kafkaStreams.setStateListener((newState, oldState) -> {
-            log.info("Kafka Streams 状态变化: {} -> {}", oldState, newState);
-        });
-    }
-
-    // 定义 ChatMessage 的 Serde
-    @Bean
-    public Serde<ChatMessage> chatMessageSerde() {
-        return new JsonSerde<>(ChatMessage.class);
-    }
-
-    // 定义 SentimentScore 的 Serde
-    @Bean
-    public Serde<SentimentScore> sentimentScoreSerde() {
-        return new JsonSerde<>(SentimentScore.class);
-    }
-
-    // 定义 WarningAlert 的 Serde
-    @Bean
-    public Serde<WarningAlert> warningAlertSerde() {
-        return new JsonSerde<>(WarningAlert.class);
-    }
-
-    // 情感分数的topic
-    @Bean
-    public NewTopic sentimentScoresTopic() {
-        return new NewTopic(KafkaConstants.SENTIMENT_SCORES_TOPIC, 3, (short) 1);
-    }
-
-    // 预警的topic
-    @Bean
-    public NewTopic warningAlertsTopic() {
-        return new NewTopic(KafkaConstants.WARNING_ALERTS_TOPIC, 3, (short) 1);
-    }
 }

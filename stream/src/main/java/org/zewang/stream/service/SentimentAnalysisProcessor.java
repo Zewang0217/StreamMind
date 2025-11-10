@@ -12,6 +12,7 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.ChatMessage;
 import org.zewang.common.dto.SentimentScore;
@@ -25,19 +26,16 @@ import org.zewang.common.serde.JsonSerde;
  * @date 2025/11/06 18:33
  */
 @Slf4j
-@Configuration // 使其成为配置类以便被 Spring 扫描
+@Component
 @RequiredArgsConstructor // Lombok 注解，自动生成构造函数
 public class SentimentAnalysisProcessor {
 
 
-    // 注入 StreamsBuilder
-    private final StreamsBuilder streamsBuilder;
     // 注入自定义的 Serdes
     private final Serde<ChatMessage> chatMessageSerde;
     private final Serde<SentimentScore> sentimentScoreSerde;
 
-    @PostConstruct // 在依赖注入完成后执行
-    public void buildTopology() {
+    public void buildTopology(StreamsBuilder streamsBuilder) {
         // 1. 从 chat-messages 主题读取消息
         KStream<String, ChatMessage> chatMessages = streamsBuilder
             .stream(KafkaConstants.CHAT_MESSAGES_TOPIC, Consumed.with(Serdes.String(), chatMessageSerde));

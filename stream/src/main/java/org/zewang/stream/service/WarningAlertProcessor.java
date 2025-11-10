@@ -1,6 +1,7 @@
 package org.zewang.stream.service;
 
 
+import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.apache.kafka.streams.kstream.Suppressed.BufferConfig;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.kstream.WindowedSerdes;
+import org.springframework.stereotype.Component;
 import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.SentimentScore;
 import org.zewang.common.dto.WarningAlert;
@@ -31,23 +33,15 @@ import org.zewang.common.dto.WarningAlert;
  */
 
 @Slf4j
-//@RequiredArgsConstructor
+@Component
+@RequiredArgsConstructor
 public class WarningAlertProcessor {
 
-    private final StreamsBuilder streamsBuilder;
     private final Serde<SentimentScore> sentimentScoreSerde;
     private final Serde<WarningAlert> warningAlertSerde;
 
-    public WarningAlertProcessor(StreamsBuilder streamsBuilder,
-        Serde<SentimentScore> sentimentScoreSerde,
-        Serde<WarningAlert> warningAlertSerde) {
-        this.streamsBuilder = streamsBuilder;
-        this.sentimentScoreSerde = sentimentScoreSerde;
-        this.warningAlertSerde = warningAlertSerde;
-    }
 
-
-    public void buildTopology() {
+    public void buildTopology(StreamsBuilder streamsBuilder) {
         log.info("开始构建预警处理器拓扑...");
 
         // 检查是否有消费者订阅该 topic
