@@ -35,14 +35,6 @@
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
 
-    <!-- kafka-streams -->
-    <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka-streams</artifactId>
-    </dependency>
-
-
-
     <!-- Spring Boot + Spring Kafka for bootstrapping (optional) -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -53,6 +45,11 @@
     <dependency>
       <groupId>org.springframework.kafka</groupId>
       <artifactId>spring-kafka</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-streams</artifactId>
     </dependency>
 
     <!-- Jackson for JSON Serde -->

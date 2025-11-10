@@ -2,6 +2,7 @@
 package org.zewang.stream.config;
 
 import jakarta.annotation.PostConstruct;
+import java.nio.file.Paths;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -89,17 +90,23 @@ public class KafkaStreamConfig {
         Map<String, Object> props = new HashMap<>();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "stream-mind-app");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        // 使用 common 模块中定义的 Serdes
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, JsonSerde.class.getName());
-        props.put(StreamsConfig.STATE_DIR_CONFIG, "streams-state-dir"); // 修改为这行
-        props.put(StreamsConfig.RETRIES_CONFIG, 3);
+
+        // 2.【重要】使用 java.io.tmpdir（一个安全可写的目录）
+        String stateDirLocation = Paths.get(
+            System.getProperty("java.io.tmpdir"), // 获取 "C:\Users\YourName\AppData\Local\Temp"
+            "stream-mind-app" // 在其中创建一个唯一的子目录
+        ).toString();
+
+        props.put(StreamsConfig.STATE_DIR_CONFIG, stateDirLocation);
+        log.info("Kafka Streams 状态目录设置为: {}", stateDirLocation); // 添加日志
+
         props.put(StreamsConfig.RETRY_BACKOFF_MS_CONFIG, 1000);
 
-        // 添加额外配置确保消费者正确工作
         props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 1);
         props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 1000);
-        props.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0); // 禁用缓存以便实时处理
+        props.put(StreamsConfig.STATESTORE_CACHE_MAX_BYTES_CONFIG, 0L); // 替换为这个
 
         return new KafkaStreamsConfiguration(props);
     }
