@@ -7,6 +7,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,38 +40,38 @@ public class KafkaStreamConfig {
     private final WarningAlertProcessor warningAlertProcessor;
     private final SentimentAnalysisProcessor sentimentAnalysisProcessor;
 
-    @Bean
-    public KafkaStreams kafkaStreams(StreamsBuilder streamsBuilder) {
-        KafkaStreamsConfiguration config = kafkaStreamsConfig();
+//    @Bean
+//    public KafkaStreams kafkaStreams(StreamsBuilder streamsBuilder) {
+//        KafkaStreamsConfiguration config = kafkaStreamsConfig();
+//
+//        log.info("KafkaStreamConfig: 构建情感分析拓扑...");
+//        sentimentAnalysisProcessor.buildTopology(streamsBuilder);
+//
+//        log.info("KafkaStreamConfig: 构建预警处理器拓扑...");
+//        warningAlertProcessor.buildTopology(streamsBuilder);
+//
+//        log.info("KafkaStreamConfig: 所有拓扑构建完毕，正在创建 KafkaStreams 实例...");
+//
+//        KafkaStreams kafkaStreams = new KafkaStreams(
+//            streamsBuilder.build(),
+//            config.asProperties()
+//        );
+//
+//        kafkaStreams.setStateListener((newState, oldState) -> {
+//            log.info("Kafka Streams 状态变化: {} -> {}", oldState, newState);
+//        });
+//
+//        kafkaStreams.start();
+//        Runtime.getRuntime().addShutdownHook(new Thread(kafkaStreams::close));
+//        log.info("Kafka Streams 已启动。");
+//        return kafkaStreams;
+//    }
 
-        log.info("KafkaStreamConfig: 构建情感分析拓扑...");
-        sentimentAnalysisProcessor.buildTopology(streamsBuilder);
-
-        log.info("KafkaStreamConfig: 构建预警处理器拓扑...");
-        warningAlertProcessor.buildTopology(streamsBuilder);
-
-        log.info("KafkaStreamConfig: 所有拓扑构建完毕，正在创建 KafkaStreams 实例...");
-
-        KafkaStreams kafkaStreams = new KafkaStreams(
-            streamsBuilder.build(),
-            config.asProperties()
-        );
-
-        kafkaStreams.setStateListener((newState, oldState) -> {
-            log.info("Kafka Streams 状态变化: {} -> {}", oldState, newState);
-        });
-
-        kafkaStreams.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(kafkaStreams::close));
-        log.info("Kafka Streams 已启动。");
-        return kafkaStreams;
-    }
 
     @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
     public KafkaStreamsConfiguration kafkaStreamsConfig() {
         Map<String, Object> props = new HashMap<>();
 
-        // 【3. 关键修复】还原所有必需的配置
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "stream-mind-app");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
