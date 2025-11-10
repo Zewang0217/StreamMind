@@ -11,14 +11,18 @@
 
   <groupId>org.zewang</groupId>
   <artifactId>StreamMind</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
     <module>common</module>
-    <module>producer</module>
-    <module>consumer</module>
-    <module>stream</module>
+    <module>collector-service</module>
+    <module>stream-analyzer</module>
+    <module>alert-service</module>
+    <!-- 可以暂时保留旧模块，直到迁移完成 -->
+    <!-- <module>producer</module> -->
+    <!-- <module>stream</module> -->
+    <!-- <module>consumer</module> -->
   </modules>
 
   <properties>

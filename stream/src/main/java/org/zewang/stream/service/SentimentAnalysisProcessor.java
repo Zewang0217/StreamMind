@@ -72,7 +72,7 @@ public class SentimentAnalysisProcessor {
             score.setSentimentLabel("Neutral");
         }
 
-        log.debug("分析情感结果如下：user: {}: {} ({})", chatMessage.getUserId(), score.getSentimentScore(), score.getSentimentLabel());
+//        log.debug("分析情感结果如下：user: {}: {} ({})", chatMessage.getUserId(), score.getSentimentScore(), score.getSentimentLabel());
 
         // 添加特殊日志，当分数为负时
         if (score.getSentimentScore() < 0) {
