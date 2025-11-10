@@ -1,4 +1,7 @@
 # src/main/resources/application.yml
+server:
+  port: 8082
+
 spring:
   application:
     name: producer
@@ -16,8 +19,8 @@ spring:
       buffer-memory: 33554432
       compression-type: snappy
       max-in-flight-requests-per-connection: 5
-      properties:
-        allow.auto.create.topics: true
+#      properties:
+#        allow.auto.create.topics: true
 #      enable-idempotence: true
 #      transaction-id-prefix: producer-tx- # 事务前缀
 # 日志配置

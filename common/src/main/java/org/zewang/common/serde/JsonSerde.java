@@ -60,7 +60,9 @@ public class JsonSerde<T> implements Serde<T> { // 实现 Serde 接口
             try {
                 return objectMapper.writeValueAsBytes(data);
             } catch (Exception e) {
-                throw new RuntimeException("Error serializing JSON message", e);
+                throw new RuntimeException("Error serializing JSON message for topic: " + topic +
+                    ", data type: " + data.getClass().getName() +
+                    ", data: " + data, e);
             }
         }
 
@@ -70,7 +72,6 @@ public class JsonSerde<T> implements Serde<T> { // 实现 Serde 接口
         }
     }
 
-    // 内部 JsonDeserializer 类
     private class JsonDeserializer<T> implements Deserializer<T> {
         private final Class<T> targetType;
 
@@ -91,7 +92,9 @@ public class JsonSerde<T> implements Serde<T> { // 实现 Serde 接口
             try {
                 return objectMapper.readValue(data, targetType);
             } catch (IOException e) {
-                throw new RuntimeException("Error deserializing JSON message", e);
+                throw new RuntimeException("Error deserializing JSON message for topic: " + topic +
+                    ", target type: " + targetType.getName() +
+                    ", data length: " + data.length, e);
             }
         }
 

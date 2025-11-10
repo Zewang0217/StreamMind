@@ -1,10 +1,18 @@
+server:
+  port: 8083
+
 spring:
   application:
     name: stream
-
   kafka:
     bootstrap-servers: localhost:9094
+    streams:
+      application-id: stream-mind-app
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.zewang.common.serde.JsonSerde
 logging:
   level:
     org.apache.kafka.streams: INFO
     org.zewang.stream: DEBUG
+#    org.apache.kafka.streams.processor: TRACE

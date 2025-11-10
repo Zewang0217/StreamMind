@@ -46,10 +46,11 @@ public class SentimentAnalysisProcessor {
         KStream<String, SentimentScore> sentimentScores = chatMessages
             .mapValues(this::analyzeSentiment); // 使用 mapValues 转换值
 
+
         // 3. 将结果写入 sentiment-scores 主题
         sentimentScores.to(KafkaConstants.SENTIMENT_SCORES_TOPIC, Produced.with(Serdes.String(), sentimentScoreSerde));
 
-        log.info("Kafka Streams topology built successfully.");
+        log.info("情感分析处理器拓扑构建完毕");
     }
 
     /**
@@ -77,7 +78,14 @@ public class SentimentAnalysisProcessor {
             score.setSentimentLabel("Neutral");
         }
 
-        log.debug("Analyzed sentiment for user {}: {} ({})", chatMessage.getUserId(), score.getSentimentScore(), score.getSentimentLabel());
+        log.debug("分析情感结果如下：user: {}: {} ({})", chatMessage.getUserId(), score.getSentimentScore(), score.getSentimentLabel());
+
+        // 添加特殊日志，当分数为负时
+        if (score.getSentimentScore() < 0) {
+            log.info("检测到负面情绪消息: userId={}, score={}, message={}",
+                chatMessage.getUserId(), score.getSentimentScore(), chatMessage.getMessage());
+        }
+
         return score;
     }
 }

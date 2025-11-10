@@ -2,6 +2,7 @@ package org.zewang.common.dto;
 
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -14,6 +15,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class SentimentScore {
     private String userId;
     private long timestamp;

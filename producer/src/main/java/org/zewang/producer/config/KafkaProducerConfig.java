@@ -66,10 +66,10 @@ public class KafkaProducerConfig {
 
 
 
-    // 创建 chat-messages topic  => 在配置文件启用自动创建topic
-//    @Bean
-//    public NewTopic chatMessageTopic() {
-//        return new NewTopic(KafkaConstants.CHAT_MESSAGES_TOPIC, 3, (short)1);
-//    }
+//     创建 chat-messages topic
+    @Bean
+    public NewTopic chatMessageTopic() {
+        return new NewTopic(KafkaConstants.CHAT_MESSAGES_TOPIC, 3, (short)1);
+    }
 
 }
