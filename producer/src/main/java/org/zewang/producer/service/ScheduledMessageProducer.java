@@ -50,7 +50,7 @@ public class ScheduledMessageProducer {
     };
 
     // 消息发送间隔（单位毫秒）
-    @Scheduled(fixedRate = 300)
+    @Scheduled(fixedRate = 2000)
     public void produceMessages() {
         int messageCount = 5 + random.nextInt(6); // 5-10
         log.info("正在处理 {} 消息...", messageCount);
