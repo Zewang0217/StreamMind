@@ -11,5 +11,6 @@ spring:
       properties:
         default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
         default.value.serde: org.springframework.kafka.support.serializer.JsonSerde
+        spring.json.trusted.packages: "*"
         num.stream.threads: 1
         state.dir: /tmp/kafka-streams

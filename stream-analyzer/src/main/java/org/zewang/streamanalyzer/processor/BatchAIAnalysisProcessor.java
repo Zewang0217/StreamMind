@@ -52,18 +52,23 @@ public class BatchAIAnalysisProcessor implements
             this::flush
         );
 
+        log.info("初始化Processor完成");
+
     }
 
     @Override
     public void process(Record<String, SocialMessage> record) {
         SocialMessage message = record.value();
         if (message.content() == null || message.content().isEmpty()) {
+            log.debug("消息为空，跳过");
             return;
         }
 
         buffer.add(message);
+        log.debug("Processor接收到消息，当前缓存{}条", buffer.size());
 
         if (buffer.size() >= BATCH_SIZE) {
+            log.info("达到批处理大小，执行flush");
             flush();
         }
     }
@@ -100,6 +105,7 @@ public class BatchAIAnalysisProcessor implements
             // TODO：调用AI外部服务，现在使用MockAIService模拟
 
             List<AnalyzedMessage> results = mockAiService.analyzeBatch(buffer);
+
             for (AnalyzedMessage result : results) {
                 context.forward(new Record<>(result.topic(), result, context.currentStreamTimeMs()));
             }
