@@ -33,7 +33,7 @@ public class SimulationCollector {
 
     private final KafkaTemplate<String, SocialMessage> kafkaTemplate;
 
-    private String topic = KafkaConstants.SOCIAL_MESSAGES;
+    private String topic = KafkaConstants.SOCIAL_MESSAGES_TOPIC;
     private List<SocialMessageCsvDto> csvData;
     private int currentIndex = 0;
 

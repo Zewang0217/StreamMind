@@ -62,14 +62,7 @@
               "icon": "lucide-file",
               "title": "学习文档 - S2"
             }
-          }
-        ],
-        "currentTab": 3
-      },
-      {
-        "id": "3f631352d324a900",
-        "type": "tabs",
-        "children": [
+          },
           {
             "id": "5d050bd1ba11e5d8",
             "type": "leaf",
@@ -84,7 +77,8 @@
               "title": "转型"
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -245,11 +239,12 @@
   },
   "active": "7016960bf6bd5320",
   "lastOpenFiles": [
+    "docs/2025-11-11.md",
+    "notes/学习文档 - S2.md",
+    "docs/today.md.md",
+    "docs/2025-11-10 1.md",
     "notes/学习文档 - S1.md",
     "notes/开发文档 2.0.md",
-    "notes/学习文档 - S2.md",
-    "docs/2025-11-10 1.md",
-    "docs/today.md.md",
     "2025-11-09.md",
     "docs/2025-11-10.md",
     "docs/2025-11-09.md",

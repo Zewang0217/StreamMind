@@ -18,6 +18,8 @@ spring:
       batch-size: 16384
       buffer-memory: 33554432
       compression-type: snappy
+    admin:
+      fail-fast: true
 
 
 
