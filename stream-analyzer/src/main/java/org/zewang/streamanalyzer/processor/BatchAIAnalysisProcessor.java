@@ -28,13 +28,17 @@ public class BatchAIAnalysisProcessor implements
     Processor<String, SocialMessage, String, AnalyzedMessage> {
     private static final Logger log = LoggerFactory.getLogger(BatchAIAnalysisProcessor.class);
     private static final int BATCH_SIZE = 50;
-    private static final Duration FLUST_INTERVAL = Duration.ofSeconds(10);
+    private static final Duration FLUSH_INTERVAL = Duration.ofSeconds(10);
 
     private ProcessorContext context;
     private List<SocialMessage> buffer;
-    private final MockAIService mockAiService = new MockAIService(); // TODO: 改为依赖注入
+    private final MockAIService mockAiService;
 
     private Cancellable schedule; // 定时任务
+
+    public BatchAIAnalysisProcessor(MockAIService mockAiService) {
+        this.mockAiService = mockAiService;
+    }
 
     @Override
     public void init(ProcessorContext context) {
@@ -93,12 +97,14 @@ public class BatchAIAnalysisProcessor implements
 
         log.debug("Processor刷新flush了{}条消息", buffer.size());
         try {
+            // TODO：调用AI外部服务，现在使用MockAIService模拟
+
             List<AnalyzedMessage> results = mockAiService.analyzeBatch(buffer);
             for (AnalyzedMessage result : results) {
                 context.forward(new Record<>(result.topic(), result, context.currentStreamTimeMs()));
             }
         } catch (Exception e) {
-            log.error("AI批量分析时出现错误{}", e.getMessage());
+            log.warn("AI批量分析时出现错误{}, 进行降级处理", e.getMessage());
             // TODO: 降级逻辑
         } finally {
             buffer.clear();
