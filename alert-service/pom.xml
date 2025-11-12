@@ -41,6 +41,12 @@
       <artifactId>spring-kafka</artifactId>
     </dependency>
 
+    <!-- Kafka Streams -->
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-streams</artifactId>
+    </dependency>
+
     <!-- JPA & PostgreSQL -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
