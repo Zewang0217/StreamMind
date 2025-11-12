@@ -22,7 +22,7 @@ import org.zewang.common.dto.alert.AlertMessage;
 @Repository
 public interface AlertMessageRepository extends JpaRepository<AlertMessage, Long> {
     // 按话题查询
-    Page<AlertMessage> findByTopicOrderByCreatedAtDesc(String topic, Pageable pageable);
+    Page<AlertMessage> findByTopicOrderByCreatedAtDesc(String topic, org.springframework.data.domain.Pageable pageable);
 
     // 按用户查询 分页
     @Query("SELECT a FROM AlertMessage a WHERE a.userId = :userId ORDER BY a.createdAt DESC")
