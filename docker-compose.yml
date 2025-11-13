@@ -74,12 +74,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app_net
-    command: >
-      bash -c "
-        apt-get update &&
-        apt-get install -y postgresql-15-partman &&
-        docker-entrypoint.sh postgres
-      "
       
 
   producer:

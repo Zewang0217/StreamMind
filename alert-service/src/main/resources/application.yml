@@ -8,8 +8,8 @@ spring:
   # 数据库配置
   datasource:
     url: jdbc:postgresql://localhost:5432/streamdb
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:password}
+    username: admin
+    password: admin123
     driver-class-name: org.postgresql.Driver
 
   # JPA配置
