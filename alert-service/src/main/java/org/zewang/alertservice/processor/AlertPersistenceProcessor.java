@@ -25,12 +25,16 @@ import org.zewang.common.dto.analyzer.AnalyzedMessage;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 public class AlertPersistenceProcessor implements
-    Processor<String, AnalyzedMessage, String, AnalyzedMessage> {
+    Processor<String, AnalyzedMessage, String, AlertMessage> {
 
     private final AlertMessageService alertMessageService;
-    private ProcessorContext<String, AnalyzedMessage> context;
+    private ProcessorContext<String, AlertMessage> context;
+
+    public AlertPersistenceProcessor(AlertMessageService alertMessageService) {
+        this.alertMessageService = alertMessageService;
+    }
 
     @Override
     public void init(ProcessorContext context) {
@@ -42,37 +46,55 @@ public class AlertPersistenceProcessor implements
     public void process(Record<String, AnalyzedMessage> record) {
         AnalyzedMessage analyzedMessage = record.value();
 
-        // 转换为 JPA 实体
-        AlertMessage alert = new AlertMessage();
-        alert.setTopic(analyzedMessage.topic());
-        alert.setUserId(analyzedMessage.userId());
-        alert.setNegativeScore(analyzedMessage.sentimentScore() < 0.3 ?
-            Math.abs(analyzedMessage.sentimentScore()) : 0.0);
+        // 判断是否出发预警
+        boolean isNegativeAlert = analyzedMessage.sentimentScore() < -0.5;
+        boolean isToxicAlert = analyzedMessage.toxicityScore() > 0.5;
 
-        alert.setMessage(String.format("话题 '%s' 负面情感分数: %.2f",
-            analyzedMessage.topic(), analyzedMessage.sentimentScore()));
+        if (isNegativeAlert || isToxicAlert) {
+            // 转换为 JPA 实体
+            AlertMessage alert = new AlertMessage();
+            alert.setTopic(analyzedMessage.topic());
+            alert.setUserId(analyzedMessage.userId());
+            alert.setNegativeScore(analyzedMessage.sentimentScore() < 0 ?
+                Math.abs(analyzedMessage.sentimentScore()) : 0.0);
 
-        // ✅ 从 Kafka Streams 的窗口时间戳获取
-        long windowEndMs = context.currentStreamTimeMs();
+            String alertType = isNegativeAlert ? "负面情感" : "高毒性";
+            alert.setMessage(String.format("话题 '%s' 触发%s预警: 情感分数=%.2f, 毒性分数=%.2f",
+                analyzedMessage.topic(), alertType,
+                analyzedMessage.sentimentScore(), analyzedMessage.toxicityScore()));
 
-        alert.setWindowEnd(
-            LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(windowEndMs),  // long -> Instant
-                ZoneOffset.UTC                      // 明确使用 UTC 时区
-            )
-        );
+            // ✅ 从 Kafka Streams 的窗口时间戳获取
+            long windowEndMs = context.currentStreamTimeMs();
+            alert.setWindowEnd(
+                LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(windowEndMs),  // long -> Instant
+                    ZoneOffset.UTC                      // 明确使用 UTC 时区
+                )
+            );
 
-        try {
-            // 保存到数据库
-            alertMessageService.saveAlert(alert);
-            log.debug("成功保存预警消息到数据库: id={}", alert.getId());
+            if (alert.getCreatedAt() == null) {
+                alert.setCreatedAt(LocalDateTime.now());
+            }
 
-            // 继续转发到下游  暂时不用，作为数据最终点
-//            context.forward(record);
-        } catch (Exception e) {
-            log.error("保存预警消息失败: {}",
-                e.getMessage(), e);
-            // TODO: 增加私信队列功能
+            try {
+                // 保存到数据库
+                AlertMessage savedAlert = alertMessageService.saveAlert(alert);
+                log.debug("成功保存预警消息到数据库: id={}", alert.getId());
+
+                // 继续转发到下游
+                Record<String, AlertMessage> alertRecord = new Record<>(
+                    savedAlert.getTopic(),  // 使用 topic 作为键
+                    savedAlert,             // 值为 AlertMessage 对象
+                    windowEndMs             // 时间戳
+                );
+
+                // 这里需要在拓扑中配置好输出主题
+                context.forward(alertRecord);
+            } catch (Exception e) {
+                log.error("保存预警消息失败: {}",
+                    e.getMessage(), e);
+                // TODO: 增加死信队列功能
+            }
         }
     }
 
