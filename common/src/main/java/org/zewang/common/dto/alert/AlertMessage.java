@@ -20,13 +20,14 @@ import lombok.Data;
  */
 
 @Entity
-@Table(name = "alert_messages", indexes = {
-    @Index(name = "idx_alert_topic", columnList = "topic"),
-    @Index(name = "idx_alert_user", columnList = "user_id"),
-    @Index(name = "idx_alert_window_end", columnList = "window_end DESC"),
-    @Index(name = "idx_alert_created_at", columnList = "created_at DESC"),
-    @Index(name = "idx_alert_topic_window", columnList = "topic, window_end DESC")
-})
+@Table(name = "alert_messages"
+//    indexes = {
+//    @Index(name = "idx_alert_topic", columnList = "topic"),
+//    @Index(name = "idx_alert_user", columnList = "user_id"),
+//    @Index(name = "idx_alert_window_end", columnList = "window_end DESC"),
+//    @Index(name = "idx_alert_created_at", columnList = "created_at DESC"),
+//    @Index(name = "idx_alert_topic_window", columnList = "topic, window_end DESC")}
+    )
 @Data
 public class AlertMessage {
 
@@ -44,7 +45,7 @@ public class AlertMessage {
     @Column(name = "window_end", nullable = false)
     private LocalDateTime windowEnd;
 
-    @Column(name = "negative_score", precision = 5, scale = 4)
+    @Column(name = "negative_score", precision = 5)
     private Double negativeScore;
 
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
