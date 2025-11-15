@@ -6,6 +6,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 import org.zewang.alertservice.processor.AlertPersistenceProcessor;
+import org.zewang.alertservice.processor.AlertProcessor;
 import org.zewang.alertservice.service.AlertMessageService;
 import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.alert.AlertMessage;
@@ -56,18 +58,19 @@ public class AlertKafkaStreamConfig {
         );
 
         // 使用自定义处理器处理消息，并获取输出流
-        KStream<String, AlertMessage> alertOutputStream = sourceStream
+        sourceStream
             .processValues(
-                () -> new AlertPersistenceProcessor(alertMessageService),  // FixedKeyProcessorSupplier
-                Named.as("alert-persistence-processor")                   // Named
+                () -> new AlertProcessor(alertMessageService), // ✅ FixedKeyProcessor
+                Named.as("alert-processor")
             )
-            .filter((key, value) -> value != null);  // 过滤掉未触发预警的消息
-
-        // 将预警消息发送到预警事件主题
-        alertOutputStream.to(
-            KafkaConstants.ALERT_EVENTS_TOPIC,
-            Produced.with(Serdes.String(), alertMessageJsonSerde)
-        );
+            // ✅ 过滤 null 值（未触发预警的）
+            .filter((key, alert) -> alert != null)
+            // ✅ 修改 Key 为 topic
+            .map((key, alert) -> KeyValue.pair(alert.getTopic(), alert))
+            .to(
+                KafkaConstants.ALERT_EVENTS_TOPIC,
+                Produced.with(Serdes.String(), alertMessageJsonSerde)
+            );
 
         // 打印拓扑信息
         Topology topology = streamsBuilder.build();
