@@ -1,4 +1,7 @@
 # src/main/resources/application.yml
+server:
+  port: 8087  # 为stream-analyzer添加端口配置
+
 spring:
   application:
     name: stream-analyzer

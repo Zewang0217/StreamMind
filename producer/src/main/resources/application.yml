@@ -1,6 +1,6 @@
-# src/main/resources/application.yml
+# producer服务端口配置
 server:
-  port: 8082
+  port: 8086
 
 spring:
   application:

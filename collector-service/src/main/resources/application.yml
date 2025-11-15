@@ -1,9 +1,9 @@
 server:
-  port: 8082
+  port: 8085
 
 spring:
   application:
-    name: producer
+    name: collector-service
   main:
     web-application-type: none # 纯后台任务，不处理HTTP请求
 
@@ -27,6 +27,6 @@ spring:
 logging:
   level:
     org.springframework.kafka: INFO
-    org.zewang.producer: DEBUG
+    org.zewang.collector: DEBUG
   pattern:
     console: "%clr(%d{yyyy-MM-dd HH:mm:ss}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
