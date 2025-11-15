@@ -48,6 +48,9 @@ public class AlertMessage {
     @Column(name = "negative_score", precision = 5)
     private Double negativeScore;
 
+    @Column(name = "toxic_score", precision = 5)
+    private Double toxicScore;
+
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
 
