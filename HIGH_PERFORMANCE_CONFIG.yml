@@ -1,0 +1,185 @@
+# 高性能配置 - 工业级优化
+# 适用于高并发、大数据量场景
+
+spring:
+  application:
+    name: streammind-high-performance
+  
+  # Kafka高性能配置
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      # 批处理优化
+      batch-size: 32768              # 32KB批处理
+      linger-ms: 100                 # 100ms等待时间
+      compression-type: lz4          # LZ4压缩，平衡速度和压缩比
+      buffer-memory: 67108864        # 64MB缓冲区
+      max-in-flight-requests-per-connection: 10
+      retries: 3
+      acks: 1                        # 平衡性能和可靠性
+      
+      # 性能调优
+      delivery-timeout-ms: 120000    # 2分钟超时
+      request-timeout-ms: 30000      # 30秒请求超时
+      metadata-max-age-ms: 300000    # 5分钟元数据刷新
+      
+    consumer:
+      # 批量消费优化
+      max-poll-records: 1000         # 每次拉取1000条记录
+      fetch-min-bytes: 32768         # 最小32KB才拉取
+      fetch-max-wait-ms: 500         # 最大等待500ms
+      enable-auto-commit: false      # 手动提交，保证一致性
+      auto-offset-reset: earliest    # 从最早开始消费
+      
+      # 性能调优
+      max-poll-interval-ms: 300000   # 5分钟最大poll间隔
+      session-timeout-ms: 30000      # 30秒会话超时
+      heartbeat-interval-ms: 3000    # 3秒心跳间隔
+      
+    admin:
+      # 管理客户端优化
+      request-timeout-ms: 30000
+      retry-backoff-ms: 100
+
+# 数据库高性能配置
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/streamdb
+    username: admin
+    password: admin123
+    driver-class-name: org.postgresql.Driver
+    
+    # HikariCP连接池优化
+    hikari:
+      # 连接池配置
+      maximum-pool-size: 50          # 最大50个连接
+      minimum-idle: 10               # 最小10个空闲连接
+      connection-timeout: 20000      # 20秒连接超时
+      idle-timeout: 300000           # 5分钟空闲超时
+      max-lifetime: 1200000          # 20分钟最大生命周期
+      leak-detection-threshold: 60000 # 60秒连接泄漏检测
+      
+      # 性能调优
+      validation-timeout: 5000       # 5秒验证超时
+      login-timeout: 5000            # 5秒登录超时
+      
+  # JPA高性能配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+      show-sql: false                # 生产环境关闭SQL日志
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+      
+    properties:
+      hibernate:
+        format_sql: false            # 关闭SQL格式化
+        use_sql_comments: false      # 关闭SQL注释
+        generate_statistics: false   # 关闭统计生成
+        
+        # 查询优化
+        jdbc:
+          batch_size: 25             # 批处理大小
+          batch_versioned_data: true # 版本化数据批处理
+        
+        # 二级缓存（可选）
+        cache:
+          use_second_level_cache: false  # 禁用二级缓存（使用Redis更好）
+          use_query_cache: false         # 禁用查询缓存
+
+# Redis高性能配置
+spring:
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    timeout: 2000                    # 2秒超时
+    
+    # Lettuce客户端优化
+    lettuce:
+      pool:
+        max-active: 20               # 最大活跃连接
+        max-idle: 10                 # 最大空闲连接
+        min-idle: 5                  # 最小空闲连接
+        max-wait: 1000ms             # 最大等待时间
+      shutdown-timeout: 100ms        # 关闭超时
+
+# 服务器高性能配置
+server:
+  port: 8080                       # 默认端口
+  tomcat:
+    # 线程池优化
+    max-connections: 8192           # 最大连接数
+    accept-count: 100               # 接受队列大小
+    max-threads: 200                # 最大工作线程
+    min-spare-threads: 10           # 最小空闲线程
+    connection-timeout: 20000       # 20秒连接超时
+    
+    # 压缩优化
+    compression:
+      enabled: true                 # 启用压缩
+      mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml
+      min-response-size: 1024       # 1KB以上才压缩
+    
+    # 异步处理优化
+    async:
+      request-timeout: 30000        # 30秒异步请求超时
+
+# 日志高性能配置
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.hibernate: WARN
+    org.apache.kafka: WARN
+    org.zewang: DEBUG
+    
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+    
+  file:
+    name: logs/application.log
+    max-size: 100MB
+    max-history: 30
+    total-size-cap: 3GB
+
+# 监控和指标配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+    
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        kafka.consumer.fetch: true
+        kafka.producer.send: true
+      
+      slo:
+        http.server.requests: 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s
+        kafka.consumer.fetch: 50ms, 100ms, 200ms, 500ms
+        kafka.producer.send: 50ms, 100ms, 200ms, 500ms
+
+# 自定义性能参数
+performance:
+  kafka:
+    batch-size: 1000              # 批处理大小
+    max-wait-time: 500ms          # 最大等待时间
+    compression-ratio: 0.8        # 压缩比例目标
+    
+  database:
+    connection-pool-size: 50      # 连接池大小
+    query-timeout: 30s            # 查询超时
+    batch-size: 1000              # 数据库批处理大小
+    
+  cache:
+    redis:
+      ttl: 300                    # 5分钟TTL
+      max-size: 10000             # 最大缓存项数
+      compression: true           # 启用压缩
