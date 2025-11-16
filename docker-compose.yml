@@ -74,14 +74,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app_net
+      
 
   producer:
     build:
       context: ./producer
       dockerfile: Dockerfile
-      args:
-        http_proxy: http://172.26.48.1:7890
-        https_proxy: http://172.26.48.1:7890
     depends_on:
       - kafka
       - postgres
@@ -89,24 +87,39 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/streamdb
     ports:
-      - "8083:8080"
+      - "8086:8086"
     networks:
       - app_net
 
-  consumer:
+  collector-service:
     build:
-      context: ./consumer
+      context: ./collector-service
       dockerfile: Dockerfile
-      args:
-        http_proxy: http://172.26.48.1:7890
-        https_proxy: http://172.26.48.1:7890
     depends_on:
       - kafka
       - postgres
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/streamdb
+    ports:
+      - "8085:8085"
+    networks:
+      - app_net
 
+  alert-service:
+    build:
+      context: ./alert-service
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/streamdb
+    ports:
+      - "8084:8084"
+    networks:
+      - app_net
 
 networks:
   app_net:

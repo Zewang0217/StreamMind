@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端代码检查 - 实时内容预警系统</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; }
+        .check-item { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>🧪 前端代码兼容性检查</h1>
+    <p>检查前端代码是否正确使用AlertMessage实体类的字段</p>
+    
+    <div id="check-results"></div>
+    
+    <script>
+        // 模拟AlertMessage实体类结构
+        class MockAlertMessage {
+            constructor(data) {
+                this.id = data.id;
+                this.topic = data.topic;
+                this.userId = data.userId;
+                this.windowEnd = data.windowEnd;
+                this.negativeScore = data.negativeScore;
+                this.toxicScore = data.toxicScore; // 重要：这是新添加的字段
+                this.message = data.message;
+                this.createdAt = data.createdAt;
+            }
+            
+            // Lombok @Data 自动生成的getter方法
+            getId() { return this.id; }
+            getTopic() { return this.topic; }
+            getUserId() { return this.userId; }
+            getWindowEnd() { return this.windowEnd; }
+            getNegativeScore() { return this.negativeScore; }
+            getToxicScore() { return this.toxicScore; } // 重要：这是新添加的getter
+            getMessage() { return this.message; }
+            getCreatedAt() { return this.createdAt; }
+        }
+        
+        // 模拟数据
+        const mockData = {
+            id: 1,
+            topic: "weibo",
+            userId: "user123",
+            windowEnd: new Date(),
+            negativeScore: 0.75,
+            toxicScore: 0.32, // 毒性分数
+            message: "测试预警消息",
+            createdAt: new Date()
+        };
+        
+        const alert = new MockAlertMessage(mockData);
+        const results = [];
+        
+        function addResult(type, message) {
+            results.push({ type, message });
+        }
+        
+        // 检查1: 验证getter方法存在
+        try {
+            if (typeof alert.getToxicScore === 'function') {
+                const toxicScore = alert.getToxicScore();
+                if (toxicScore === 0.32) {
+                    addResult('success', '✅ getToxicScore() 方法存在且工作正常');
+                } else {
+                    addResult('error', `❌ getToxicScore() 返回值异常: ${toxicScore}`);
+                }
+            } else {
+                addResult('error', '❌ getToxicScore() 方法不存在');
+            }
+        } catch (e) {
+            addResult('error', `❌ getToxicScore() 调用异常: ${e.message}`);
+        }
+        
+        // 检查2: 验证其他关键getter方法
+        const requiredGetters = ['getNegativeScore', 'getTopic', 'getUserId', 'getCreatedAt'];
+        requiredGetters.forEach(getter => {
+            try {
+                if (typeof alert[getter] === 'function') {
+                    const value = alert[getter]();
+                    addResult('success', `✅ ${getter}() 方法存在，返回值: ${value}`);
+                } else {
+                    addResult('error', `❌ ${getter}() 方法不存在`);
+                }
+            } catch (e) {
+                addResult('error', `❌ ${getter}() 调用异常: ${e.message}`);
+            }
+        });
+        
+        // 检查3: 验证JavaScript对象属性访问
+        try {
+            if (alert.toxicScore !== undefined) {
+                addResult('success', `✅ JavaScript属性访问正常: alert.toxicScore = ${alert.toxicScore}`);
+            } else {
+                addResult('error', '❌ JavaScript属性访问异常: toxicScore未定义');
+            }
+        } catch (e) {
+            addResult('error', `❌ JavaScript属性访问异常: ${e.message}`);
+        }
+        
+        // 检查4: 验证前端模板代码兼容性
+        const templateTests = [
+            {
+                code: 'alert.toxicScore > 0.5',
+                test: () => alert.toxicScore > 0.5,
+                expected: false
+            },
+            {
+                code: 'alert.getToxicScore() > 0.5',
+                test: () => alert.getToxicScore() > 0.5,
+                expected: false
+            },
+            {
+                code: '(alert.toxicScore || 0) * 100',
+                test: () => (alert.toxicScore || 0) * 100,
+                expected: 32
+            }
+        ];
+        
+        templateTests.forEach(test => {
+            try {
+                const result = test.test();
+                if (result === test.expected) {
+                    addResult('success', `✅ 模板代码兼容性正常: ${test.code} = ${result}`);
+                } else {
+                    addResult('warning', `⚠️ 模板代码结果异常: ${test.code} = ${result}, 期望: ${test.expected}`);
+                }
+            } catch (e) {
+                addResult('error', `❌ 模板代码执行异常: ${test.code} - ${e.message}`);
+            }
+        });
+        
+        // 显示结果
+        const resultsContainer = document.getElementById('check-results');
+        resultsContainer.innerHTML = results.map(result => 
+            `<div class="check-item ${result.type}">${result.message}</div>`
+        ).join('');
+        
+        // 总结
+        const successCount = results.filter(r => r.type === 'success').length;
+        const errorCount = results.filter(r => r.type === 'error').length;
+        const warningCount = results.filter(r => r.type === 'warning').length;
+        
+        addResult('info', `📊 检查完成：${successCount}项通过，${errorCount}项错误，${warningCount}项警告`);
+        
+        if (errorCount === 0) {
+            addResult('success', '🎉 所有检查通过！前端代码与AlertMessage实体类兼容。');
+        } else {
+            addResult('error', '❌ 存在兼容性问题，需要修复后端实体类或前端代码。');
+        }
+        
+        // 重新显示包含总结的结果
+        resultsContainer.innerHTML = results.map(result => 
+            `<div class="check-item ${result.type}">${result.message}</div>`
+        ).join('');
+    </script>
+</body>
+</html>

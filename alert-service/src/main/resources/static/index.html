@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时内容预警仪表盘</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #007bff;
+            transition: transform 0.2s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .metric-card.high-risk {
+            border-left-color: #dc3545;
+        }
+        
+        .metric-card.medium-risk {
+            border-left-color: #ffc107;
+        }
+        
+        .metric-card.low-risk {
+            border-left-color: #28a745;
+        }
+        
+        .metric-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #495057;
+        }
+        
+        .alert-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #dc3545;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .alert-item.medium {
+            border-left-color: #ffc107;
+        }
+        
+        .alert-item.low {
+            border-left-color: #28a745;
+        }
+        
+        .alert-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-score {
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .score-high {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .score-medium {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .score-low {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .status-online {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-offline {
+            background-color: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .refresh-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .refresh-btn.spinning {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面头部 -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-0">
+                        <i class="fas fa-shield-alt me-3"></i>
+                        实时内容预警仪表盘
+                    </h1>
+                    <p class="mb-0 mt-2 opacity-75">
+                        基于Kafka Streams的社交媒体内容实时分析与预警系统
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex align-items-center justify-content-end">
+                        <span class="status-indicator status-online"></span>
+                        <span id="connection-status">系统运行中</span>
+                        <span class="ms-3" id="last-update">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- 关键指标卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-number text-primary" id="total-alerts">0</div>
+                    <div class="metric-label">总预警数</div>
+                    <div class="mt-2">
+                        <small class="text-muted">过去24小时</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card high-risk">
+                    <div class="metric-number text-danger" id="high-risk-alerts">0</div>
+                    <div class="metric-label">高风险预警</div>
+                    <div class="mt-2">
+                        <small class="text-muted">风险分数 > 0.7</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card medium-risk">
+                    <div class="metric-number text-warning" id="medium-risk-alerts">0</div>
+                    <div class="metric-label">中风险预警</div>
+                    <div class="mt-2">
+                        <small class="text-muted">风险分数 0.5-0.7</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card low-risk">
+                    <div class="metric-number text-success" id="low-risk-alerts">0</div>
+                    <div class="metric-label">低风险管理</div>
+                    <div class="mt-2">
+                        <small class="text-muted">风险分数 ≤ 0.5</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="row">
+            <!-- 预警趋势图 -->
+            <div class="col-lg-8">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="fas fa-chart-line me-2"></i>
+                        预警趋势分析（过去24小时）
+                    </div>
+                    <div id="trend-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+            
+            <!-- 话题分布饼图 -->
+            <div class="col-lg-4">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        话题分布统计
+                    </div>
+                    <div id="topic-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 风险等级分布 -->
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        风险等级分布
+                    </div>
+                    <div id="risk-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+            
+            <!-- 实时预警列表 -->
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <div class="chart-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        最新预警信息
+                    </div>
+                    <div id="alerts-list" style="max-height: 300px; overflow-y: auto;">
+                        <div class="loading-spinner">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-2">正在加载预警数据...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 刷新按钮 -->
+    <button class="refresh-btn" id="refresh-btn" title="刷新数据">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        class AlertDashboard {
+            constructor() {
+                this.apiBaseUrl = '/api/dashboard';
+                this.charts = {};
+                this.refreshInterval = 30000; // 30秒刷新一次
+                this.init();
+            }
+
+            async init() {
+                try {
+                    await this.checkHealth();
+                    await this.loadAllData();
+                    this.initCharts();
+                    this.startAutoRefresh();
+                    this.bindEvents();
+                    this.updateConnectionStatus('在线', true);
+                } catch (error) {
+                    console.error('初始化失败:', error);
+                    this.updateConnectionStatus('离线', false);
+                }
+            }
+
+            async checkHealth() {
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/health`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.status !== 'UP') {
+                        throw new Error('服务异常');
+                    }
+                } catch (error) {
+                    throw new Error('无法连接到后端服务');
+                }
+            }
+
+            async loadAllData() {
+                try {
+                    // 并行加载所有数据
+                    const [stats, trends, topics, alerts] = await Promise.all([
+                        this.fetchData('stats'),
+                        this.fetchData('trends'),
+                        this.fetchData('topics'),
+                        this.fetchData('alerts/recent?limit=20')
+                    ]);
+
+                    this.updateMetrics(stats);
+                    this.updateTrendsChart(trends);
+                    this.updateTopicChart(topics);
+                    this.updateRiskChart(stats);
+                    this.updateAlertsList(alerts);
+                    
+                    this.updateLastUpdateTime();
+                } catch (error) {
+                    console.error('加载数据失败:', error);
+                    throw error;
+                }
+            }
+
+            async fetchData(endpoint) {
+                const response = await fetch(`${this.apiBaseUrl}/${endpoint}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return await response.json();
+            }
+
+            updateMetrics(stats) {
+                document.getElementById('total-alerts').textContent = stats.totalAlerts || 0;
+                document.getElementById('high-risk-alerts').textContent = stats.highRiskAlerts || 0;
+                document.getElementById('medium-risk-alerts').textContent = stats.mediumRiskAlerts || 0;
+                document.getElementById('low-risk-alerts').textContent = stats.lowRiskAlerts || 0;
+            }
+
+            initCharts() {
+                // 初始化趋势图
+                this.charts.trend = echarts.init(document.getElementById('trend-chart'));
+                
+                // 初始化话题分布图
+                this.charts.topic = echarts.init(document.getElementById('topic-chart'));
+                this.charts.topic.setOption({
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{a} <br/>{b}: {c} ({d}%)'
+                    },
+                    legend: {
+                        bottom: '5%',
+                        left: 'center'
+                    },
+                    series: [{
+                        name: '话题分布',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '18',
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: []
+                    }]
+                });
+
+                // 初始化风险等级图
+                this.charts.risk = echarts.init(document.getElementById('risk-chart'));
+                this.charts.risk.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
+                        }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: ['高风险', '中风险', '低风险'],
+                        axisTick: {
+                            alignWithLabel: true
+                        }
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [{
+                        name: '预警数量',
+                        type: 'bar',
+                        barWidth: '60%',
+                        data: [],
+                        itemStyle: {
+                            color: function(params) {
+                                const colors = ['#dc3545', '#ffc107', '#28a745'];
+                                return colors[params.dataIndex];
+                            }
+                        }
+                    }]
+                });
+
+                // 响应式图表
+                window.addEventListener('resize', () => {
+                    Object.values(this.charts).forEach(chart => chart.resize());
+                });
+            }
+
+            updateTrendsChart(trends) {
+                if (!this.charts.trend) return;
+
+                const hourlyData = trends.hourlyStats || {};
+                const weiboData = trends.weiboHourly || {};
+                const zhihuData = trends.zhihuHourly || {};
+
+                const hours = Object.keys(hourlyData).sort();
+                const totalData = hours.map(hour => hourlyData[hour] || 0);
+                const weiboValues = hours.map(hour => weiboData[hour] || 0);
+                const zhihuValues = hours.map(hour => zhihuData[hour] || 0);
+
+                // 格式化时间显示
+                const formattedHours = hours.map(hour => {
+                    const date = new Date(hour);
+                    return `${date.getHours().toString().padStart(2, '0')}:00`;
+                });
+
+                this.charts.trend.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross'
+                        }
+                    },
+                    legend: {
+                        data: ['总预警', '微博', '知乎'],
+                        top: '5%'
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: formattedHours
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: '预警数量'
+                    },
+                    series: [
+                        {
+                            name: '总预警',
+                            type: 'line',
+                            smooth: true,
+                            data: totalData,
+                            itemStyle: {
+                                color: '#667eea'
+                            },
+                            areaStyle: {
+                                opacity: 0.3
+                            }
+                        },
+                        {
+                            name: '微博',
+                            type: 'line',
+                            smooth: true,
+                            data: weiboValues,
+                            itemStyle: {
+                                color: '#e74c3c'
+                            }
+                        },
+                        {
+                            name: '知乎',
+                            type: 'line',
+                            smooth: true,
+                            data: zhihuValues,
+                            itemStyle: {
+                                color: '#3498db'
+                            }
+                        }
+                    ]
+                });
+            }
+
+            updateTopicChart(topics) {
+                if (!this.charts.topic) return;
+
+                const topicDistribution = topics.topicDistribution || {};
+                const data = Object.entries(topicDistribution).map(([name, value]) => ({
+                    name: name === 'weibo' ? '微博' : name === 'zhihu' ? '知乎' : name,
+                    value: value
+                }));
+
+                this.charts.topic.setOption({
+                    series: [{
+                        data: data
+                    }]
+                });
+            }
+
+            updateRiskChart(stats) {
+                if (!this.charts.risk) return;
+
+                const riskData = [
+                    stats.highRiskAlerts || 0,
+                    stats.mediumRiskAlerts || 0,
+                    stats.lowRiskAlerts || 0
+                ];
+
+                this.charts.risk.setOption({
+                    series: [{
+                        data: riskData
+                    }]
+                });
+            }
+
+            updateAlertsList(alerts) {
+                const container = document.getElementById('alerts-list');
+                const weiboAlerts = alerts.weiboAlerts || [];
+                const zhihuAlerts = alerts.zhihuAlerts || [];
+                
+                const allAlerts = [...weiboAlerts, ...zhihuAlerts]
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    .slice(0, 20);
+
+                if (allAlerts.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <p>暂无预警信息</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const alertsHtml = allAlerts.map(alert => {
+                    const riskLevel = this.getRiskLevel(alert.negativeScore);
+                    const riskClass = riskLevel.toLowerCase();
+                    const scoreClass = `score-${riskClass}`;
+                    const sourceIcon = alert.topic === 'weibo' ? 'fab fa-weibo' : 'fab fa-zhihu';
+                    const sourceName = alert.topic === 'weibo' ? '微博' : '知乎';
+                    
+                    return `
+                        <div class="alert-item ${riskClass}">
+                            <div class="alert-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="${sourceIcon} me-2"></i>
+                                    <strong>${sourceName}</strong>
+                                    <span class="text-muted ms-2">用户: ${alert.userId}</span>
+                                </div>
+                                <div>
+                                    <span class="alert-score ${scoreClass}">
+                                        风险: ${(alert.negativeScore * 100).toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="alert-content">
+                                <p class="mb-1"><strong>内容:</strong> ${alert.content || '暂无内容'}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    ${this.formatTime(alert.createdAt)}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = alertsHtml;
+            }
+
+            getRiskLevel(score) {
+                if (score > 0.7) return 'HIGH';
+                if (score > 0.5) return 'MEDIUM';
+                return 'LOW';
+            }
+
+            formatTime(timeString) {
+                const date = new Date(timeString);
+                const now = new Date();
+                const diff = now - date;
+                
+                if (diff < 60000) return '刚刚';
+                if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+                if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+                
+                return date.toLocaleString('zh-CN');
+            }
+
+            updateConnectionStatus(status, isOnline) {
+                const statusElement = document.getElementById('connection-status');
+                const indicator = document.querySelector('.status-indicator');
+                
+                statusElement.textContent = `系统${status}`;
+                indicator.className = `status-indicator ${isOnline ? 'status-online' : 'status-offline'}`;
+            }
+
+            updateLastUpdateTime() {
+                const timeElement = document.getElementById('last-update');
+                const now = new Date();
+                timeElement.textContent = `最后更新: ${now.toLocaleTimeString('zh-CN')}`;
+            }
+
+            startAutoRefresh() {
+                setInterval(async () => {
+                    try {
+                        await this.loadAllData();
+                        this.updateConnectionStatus('在线', true);
+                    } catch (error) {
+                        console.error('自动刷新失败:', error);
+                        this.updateConnectionStatus('离线', false);
+                    }
+                }, this.refreshInterval);
+            }
+
+            bindEvents() {
+                const refreshBtn = document.getElementById('refresh-btn');
+                refreshBtn.addEventListener('click', async () => {
+                    refreshBtn.classList.add('spinning');
+                    try {
+                        await this.loadAllData();
+                        this.updateConnectionStatus('在线', true);
+                    } catch (error) {
+                        console.error('手动刷新失败:', error);
+                        this.updateConnectionStatus('离线', false);
+                    } finally {
+                        setTimeout(() => refreshBtn.classList.remove('spinning'), 1000);
+                    }
+                });
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            new AlertDashboard();
+        });
+    </script>
+</body>
+</html>
