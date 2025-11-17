@@ -4,6 +4,7 @@ package org.zewang.collectorservice.model;
 import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author "Zewang"
@@ -14,6 +15,7 @@ import lombok.Data;
  */
 
 @Data
+@NoArgsConstructor
 public class RSSHubItem {
     private String title;
     private String link;
@@ -21,4 +23,5 @@ public class RSSHubItem {
     private String author;
     private LocalDateTime pubDate;
     private Map<String, Object> extras; // 额外字段
+    private int ttl;
 }
