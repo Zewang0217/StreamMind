@@ -1,0 +1,221 @@
+package org.zewang.collectorservice.service;
+
+
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.zewang.collectorservice.model.RSSHubConfig;
+import org.zewang.collectorservice.model.RSSHubFeedConfig;
+import org.zewang.collectorservice.rsshubPaerser.RSSHubRssParser;
+import org.zewang.common.constant.KafkaConstants;
+import org.zewang.common.dto.social_message.SocialMessage;
+
+/**
+ * @author "Zewang"
+ * @version 1.0
+ * @description: RSSHub数据收集器
+ * @email "Zewang0217@outlook.com"
+ * @date 2025/11/17 13:13
+ */
+
+@Slf4j
+@Service
+@Profile("rsshub-data")
+@RequiredArgsConstructor
+public class RSSHubDataCollector {
+
+    private final WebClient webClient;
+    private final KafkaTemplate<String, SocialMessage> kafkaTemplate;
+    private final RSSHubRssParser rssParser;
+    private final RSSHubConfig rssHubConfig;
+
+    // 记录每个feed的上次抓取时间，用于控制抓取频率
+    private final Map<String, LocalDateTime> lastFetchTime = new ConcurrentHashMap<>();
+
+    // 定时调度，每分钟一次，检查并抓取需要更新的RSSHub feeds
+    @Scheduled(fixedDelay = 60000) // 每分钟检查一次
+    public void scheduleFeeds() {
+        // 检查RSSHub数据收集是否启用
+        if (!rssHubConfig.isEnabled()) {
+            log.info("RSSHub 数据收集器不可用");
+            return;
+        }
+
+        log.info("检查RSSHub feeds");
+
+        // 遍历所有配置的feeds
+        for (RSSHubFeedConfig feedConfig : rssHubConfig.getFeeds()) {
+            // 检查当前feed是否需要抓取
+            if (shouldFetchFeed(feedConfig)) {
+                log.info("正在检查 feed: " + feedConfig.getName());
+
+                try {
+                    // 抓取feed
+                    collectFeed(feedConfig, rssHubConfig.getUrl());
+                    // 更新上次抓取时间
+                    lastFetchTime.put(feedConfig.getName(), LocalDateTime.now());
+                } catch (Exception e) {
+                    log.error("收集feed {} 发生错误 ： {}", feedConfig.getName(), e.getMessage());
+                }
+            }
+        }
+    }
+
+    // 检查 feed 是否应该被抓取
+    public boolean shouldFetchFeed(RSSHubFeedConfig feedConfig) {
+        // 检查feed是否启用
+        if (!feedConfig.isEnabled()) {
+            return false;
+        }
+
+        LocalDateTime lastFetch = lastFetchTime.get(feedConfig.getName());
+        if (lastFetch == null) {
+            return true; // 从未抓取过
+        }
+
+        // 检查是否达到抓取间隔
+        LocalDateTime nextFetchTime = lastFetch.plusMinutes(feedConfig.getFetchInterval());
+        return LocalDateTime.now().isAfter(nextFetchTime);
+    }
+
+
+    /**
+     * 收集单个RSSHub feed的数据
+     * @param config feed配置
+     * @param rsshubUrl RSSHub服务地址
+     */
+    public void collectFeed(RSSHubFeedConfig config, String rsshubUrl) {
+        if (!config.isEnabled()) {
+            log.info("Feed {} is disabled, skipping", config.getName());
+            return;
+        }
+
+        try {
+            // 构建完整的RSSHub feed URL
+            String fullUrl = rsshubUrl + config.getRoute();
+            log.info("Collecting RSSHub feed: {}", fullUrl);
+
+            // 使用WebClient获取RSS数据
+             String rssContent = webClient.get()
+                .uri(fullUrl)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+            // 解析RSS
+            var items = rssParser.parseRss(rssContent);
+
+            // 添加调试信息
+            log.info("解析到 {} 条数据项", items.size());
+            if (!items.isEmpty()) {
+                // 显示前3条数据的详细信息
+                items.stream().limit(3).forEach(item -> {
+                    log.info("数据项: 标题='{}', 链接='{}', 作者='{}'",
+                        item.getTitle(), item.getLink(), item.getAuthor());
+                });
+            }
+
+            // 将解析后的数据转换为SocialMessage并发送到Kafka
+             for (var item : items) {
+                SocialMessage message = convertToSocialMessage(item, config);
+                kafkaTemplate.send(KafkaConstants.SOCIAL_MESSAGES_TOPIC,
+                    message.messageId(), message);
+//                log.info("Sent RSSHub message: {}", message.messageId());
+            }
+
+            log.info("Successfully collected {} items from {}", items.size(), config.getName());
+
+        } catch (Exception e) {
+            log.error("Error collecting RSSHub feed {}: {}", config.getName(), e.getMessage());
+        }
+    }
+
+    /**
+     * 将RSSHubItem转换为SocialMessage
+     * @param item RSSHub解析后的条目
+     * @param config feed配置
+     * @return SocialMessage对象
+     */
+    private SocialMessage convertToSocialMessage(org.zewang.collectorservice.model.RSSHubItem item,
+        RSSHubFeedConfig config) {
+        // 根据信息源类型进行不同的字段映射
+        String topic = extractTopic(item, config);
+        int interactionCount = estimateInteractionCount(item, config);
+
+        return SocialMessage.builder()
+            .messageId(UUID.randomUUID().toString())
+            .source(config.getSource())
+            .topic(topic)
+            .userId(item.getAuthor() != null ? item.getAuthor() : "unknown")
+            .timestamp(item.getPubDate() != null ? item.getPubDate() : LocalDateTime.now())
+            .content(item.getTitle() + " - " + item.getDescription())
+            .interactionCount(interactionCount)
+            .build();
+    }
+
+    /**
+     * 根据feed配置提取话题标签
+     * @param item RSSHub条目
+     * @param config feed配置
+     * @return 话题标签
+     */
+    private String extractTopic(org.zewang.collectorservice.model.RSSHubItem item, RSSHubFeedConfig config) {
+        // 根据配置和项目内容提取话题
+        String category = config.getCategory();
+        String title = item.getTitle();
+
+        // 简单的关键词提取逻辑
+        if (category.equals("hot-search")) {
+            return title.length() > 20 ? title.substring(0, 20) : title;
+        } else if (category.equals("weekly")) {
+            return "B站每周必看";
+        } else if (category.equals("popular")) {
+            return "B站热门";
+        } else if (category.equals("hot")) {
+            return "知乎热榜";
+        } else if (category.equals("pin-daily")) {
+            return "知乎想法日报";
+        }
+
+        return category;
+    }
+
+    /**
+     * 估算互动数
+     * @param item RSSHub条目
+     * @param config feed配置
+     * @return 估算的互动数
+     */
+    private int estimateInteractionCount(org.zewang.collectorservice.model.RSSHubItem item, RSSHubFeedConfig config) {
+        // 根据信息源类型估算互动数
+        // 这里可以根据实际需求调用额外的API获取真实的互动数据
+        // 或者基于发布时间、内容长度等因素进行估算
+
+        java.util.Random random = new java.util.Random();
+        switch (config.getCategory()) {
+            case "hot-search":
+                return 10000 + random.nextInt(90000); // 1万-10万
+            case "popular":
+                return 5000 + random.nextInt(45000);  // 5千-5万
+            case "weekly":
+                return 1000 + random.nextInt(9000);   // 1千-1万
+            case "hot":
+                return 5000 + random.nextInt(45000);  // 5千-5万
+            case "pin-daily":
+                return 500 + random.nextInt(4500);    // 5百-5千
+            default:
+                return 100 + random.nextInt(900);     // 1百-1千
+        }
+    }
+
+}
