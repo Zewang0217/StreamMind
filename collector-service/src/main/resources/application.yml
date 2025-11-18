@@ -6,7 +6,8 @@ spring:
     name: collector-service
   main:
     web-application-type: none # 纯后台任务，不处理HTTP请求
-
+  profiles:
+    active: rsshub-data
   kafka:
     bootstrap-servers: localhost:9094
     producer:
@@ -30,3 +31,42 @@ logging:
     org.zewang.collector: DEBUG
   pattern:
     console: "%clr(%d{yyyy-MM-dd HH:mm:ss}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+
+datasources:
+  rsshub:
+    enabled: true
+    url: http://localhost:1200
+    feeds:
+      # B站信息源
+      - name: "bilibili-weekly"
+        route: "/bilibili/weekly"
+        source: "bilibili"
+        category: "weekly"
+        fetch-interval: 60  # 60分钟抓取一次
+        enabled: true
+      - name: "bilibili-popular"
+        route: "/bilibili/popular/all"
+        source: "bilibili"
+        category: "popular"
+        fetch-interval: 30  # 30分钟抓取一次
+        enabled: true
+      - name: "bilibili-hot-search"
+        route: "/bilibili/hot-search"
+        source: "bilibili"
+        category: "hot-search"
+        fetch-interval: 15  # 15分钟抓取一次
+        enabled: true
+
+      # 知乎信息源
+      - name: "zhihu-hot"
+        route: "/zhihu/hot"
+        source: "zhihu"
+        category: "hot"
+        fetch-interval: 20  # 20分钟抓取一次
+        enabled: true
+      - name: "zhihu-pin-daily"
+        route: "/zhihu/pin/daily"
+        source: "zhihu"
+        category: "pin-daily"
+        fetch-interval: 60  # 60分钟抓取一次
+        enabled: true

@@ -74,52 +74,25 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app_net
-      
 
-  producer:
-    build:
-      context: ./producer
-      dockerfile: Dockerfile
-    depends_on:
-      - kafka
-      - postgres
-    environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/streamdb
+  rsshub:
+    image: diygod/rsshub:chromium-bundled  # 使用带 Chromium 的镜像
+    container_name: rsshub
+    restart: always
     ports:
-      - "8086:8086"
+      - "1200:1200"
+    environment:
+      - NODE_ENV=production
+      - CACHE_TYPE=memory
+#      - HTTP_PROXY=http://172.26.48.1:7890  # 如不需要代理可删除
+#      - HTTPS_PROXY=http://172.26.48.1:7890
+#      - PROXY_URI=http://172.26.48.1:7890
+      # Puppeteer 会自动使用内置 Chromium，无需额外配置
+    shm_size: '1gb'
     networks:
       - app_net
 
-  collector-service:
-    build:
-      context: ./collector-service
-      dockerfile: Dockerfile
-    depends_on:
-      - kafka
-      - postgres
-    environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/streamdb
-    ports:
-      - "8085:8085"
-    networks:
-      - app_net
 
-  alert-service:
-    build:
-      context: ./alert-service
-      dockerfile: Dockerfile
-    depends_on:
-      - kafka
-      - postgres
-    environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/streamdb
-    ports:
-      - "8084:8084"
-    networks:
-      - app_net
 
 networks:
   app_net:
