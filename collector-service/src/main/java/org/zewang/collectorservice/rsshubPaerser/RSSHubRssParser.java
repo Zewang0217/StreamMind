@@ -44,6 +44,9 @@ public class RSSHubRssParser {
     // 核心方法：解析xml字符串
     public List<RSSHubItem> parseRss(String xmlContent) {
         try {
+//            // 添加调试输出，查看原始XML内容
+//            log.debug("原始RSS内容: {}", xmlContent);
+
             // 原始解析
             RSSHubResponse response = xmlMapper.readValue(xmlContent, RSSHubResponse.class);
             Channel channel = response.getChannel();
@@ -118,6 +121,11 @@ public class RSSHubRssParser {
 
     // RSS日期格式解析
     private LocalDateTime parsePubDate(String pubDateStr) {
+        if (pubDateStr == null || pubDateStr.trim().isEmpty()) {
+//            log.warn("日期字符串为空，使用当前时间");
+            return LocalDateTime.now();
+        }
+
         try {
             ZonedDateTime zdt = ZonedDateTime.parse(pubDateStr, RSS_DATE_FORMAT);
             return zdt.toLocalDateTime();
