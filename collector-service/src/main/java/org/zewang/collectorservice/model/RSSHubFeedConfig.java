@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 @Data
+@Component
 public class RSSHubFeedConfig {
     private String name;
     private String route;
