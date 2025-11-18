@@ -112,6 +112,9 @@ public class RSSHubDataCollector {
                 .bodyToMono(String.class)
                 .block();
 
+            // 添加RSS内容长度日志
+            log.info("获取到RSS内容长度: {}", rssContent != null ? rssContent.length() : 0);
+
             // 解析RSS
             var items = rssParser.parseRss(rssContent);
 
@@ -128,7 +131,9 @@ public class RSSHubDataCollector {
             // 将解析后的数据转换为SocialMessage并发送到Kafka
              for (var item : items) {
                 SocialMessage message = convertToSocialMessage(item, config);
-                kafkaTemplate.send(KafkaConstants.SOCIAL_MESSAGES_TOPIC,
+//                 log.debug("准备发送消息到Kafka: messageId={}, source={}, topic={}；标题：{}",
+//                     message.messageId(), message.source(), message.topic(), item.getTitle());
+                 kafkaTemplate.send(KafkaConstants.SOCIAL_MESSAGES_TOPIC,
                     message.messageId(), message);
 //                log.info("Sent RSSHub message: {}", message.messageId());
             }

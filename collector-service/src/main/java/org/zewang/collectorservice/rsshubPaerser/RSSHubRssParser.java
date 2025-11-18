@@ -109,10 +109,13 @@ public class RSSHubRssParser {
 
         }
 
-        // 知乎：已经是纯文本，只截取前300字
+        // 知乎处理
         if (item.getLink().contains("zhihu.com")) {
             String plain = rawDesc.replaceAll("<[^>]*>", "");
-            return plain.substring(0, Math.min(300, plain.length()));
+            String result = plain.substring(0, Math.min(300, plain.length()));
+            log.debug("知乎内容解析 - 原始长度: {}, 解析后长度: {}, 内容预览: {}",
+                rawDesc.length(), result.length(), result.substring(0, Math.min(50, result.length())));
+            return result;
         }
 
         // 默认：返回纯文本

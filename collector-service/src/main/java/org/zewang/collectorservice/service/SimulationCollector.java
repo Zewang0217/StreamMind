@@ -27,7 +27,7 @@ import org.zewang.common.dto.social_message.SocialMessageCsvDto;
  */
 
 @Slf4j
-@Component
+//@Component
 @RequiredArgsConstructor
 public class SimulationCollector {
 

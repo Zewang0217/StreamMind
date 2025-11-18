@@ -1,8 +1,11 @@
 // src/test/java/org/zewang/collectorservice/RSSHubDataCollectorIntegrationTest.java
 package org.zewang.collectorservice;
 
+import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -15,7 +18,10 @@ import org.zewang.common.dto.social_message.SocialMessage;
 
 import java.util.Arrays;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.util.AssertionErrors.assertFalse;
+import static org.springframework.test.util.AssertionErrors.assertNotNull;
 
 @SpringBootTest
 @ActiveProfiles("rsshub-data")
@@ -53,4 +59,22 @@ public class RSSHubDataCollectorIntegrationTest {
             }
         }
     }
+
+    @Test
+    void collectFeed_ZhihuFeed_ShouldProcessCorrectly() {
+        // 查找知乎相关的feed配置
+        RSSHubFeedConfig zhihuFeed = rssHubConfig.getFeeds().stream()
+            .filter(feed -> "zhihu".equals(feed.getSource()))
+            .findFirst()
+            .orElse(null);
+
+        if (zhihuFeed != null && zhihuFeed.isEnabled()) {
+            // 执行数据收集（使用真实的KafkaTemplate发送真实消息）
+            rssHubDataCollector.collectFeed(zhihuFeed, rssHubConfig.getUrl());
+
+            // 验证应该通过其他方式，比如检查日志输出或数据库状态
+            System.out.println("知乎数据收集测试完成");
+        }
+    }
+
 }
