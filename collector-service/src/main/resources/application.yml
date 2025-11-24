@@ -22,7 +22,12 @@ spring:
     admin:
       fail-fast: true
 
-
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 3000ms
 
 # 日志配置
 logging:
