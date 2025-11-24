@@ -77,4 +77,17 @@ public class RSSHubDataCollectorIntegrationTest {
         }
     }
 
+    @Test
+    void collectFeed_36kr_ShouldProcessCorrectly() {
+        RSSHubFeedConfig krFeed = rssHubConfig.getFeeds().stream()
+            .filter(feed -> "36kr".equals(feed.getSource()))
+            .findFirst()
+            .orElse(null);
+
+        if (krFeed != null && krFeed.isEnabled()) {
+            rssHubDataCollector.collectFeed(krFeed, rssHubConfig.getUrl());
+            System.out.println("36kr数据收集测试完成");
+        }
+    }
+
 }

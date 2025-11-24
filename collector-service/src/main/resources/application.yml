@@ -75,3 +75,11 @@ datasources:
         category: "pin-daily"
         fetch-interval: 60  # 60分钟抓取一次
         enabled: true
+
+      # 36氪
+      - name: "36kr-newsflashes"
+        route: "/36kr/newsflashes"
+        source: "36kr"
+        category: "newsflashes"
+        fetch-interval: 10  # 10分钟抓取一次
+        enabled: true
