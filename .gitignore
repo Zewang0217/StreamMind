@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+/vault/.obsidian/plugins/obsidian-advanced-slides/plugin/math/mathjax/input/tex/extensions/action.js
+
+### obsidian vault ###
+/vault/.obsidian/
+/vault/others/
