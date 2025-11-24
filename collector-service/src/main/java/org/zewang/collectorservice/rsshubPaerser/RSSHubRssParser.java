@@ -118,6 +118,10 @@ public class RSSHubRssParser {
             return result;
         }
 
+        if (item.getLink().contains("36kr.com")) {
+            String plainText = Jsoup.parse(rawDesc).text();
+            return plainText.substring(0, Math.min(200, plainText.length()));        }
+
         // 默认：返回纯文本
         return Jsoup.parse(rawDesc).text();
     }

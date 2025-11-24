@@ -50,7 +50,6 @@ public class DeduplicationService {
         // 如果key存在，什么都不做，返回false
         Boolean isAbsent = redisTemplate.opsForValue().setIfAbsent(key, "1", EXPIRE_TIME);
 
-        // 放置空指针
         return Boolean.TRUE.equals(isAbsent);
     }
 
