@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "others/mlfqs.md",
+                "file": "docs-1.5/2025-11-26.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "mlfqs"
+              "title": "2025-11-26"
             }
           },
           {
@@ -239,15 +239,19 @@
       "obsidian-advanced-slides:Show Slide Preview": false
     }
   },
-  "active": "dd22f97890d8d4bc",
+  "active": "c8d6e80ce91ff50b",
   "lastOpenFiles": [
+    "docs-1.5/2025-11-24.md",
+    "docs-1.5/2025-11-26.md",
+    "docs-1.5/后续方向.md",
+    "Pasted image 20251126181211.png",
     "others/分享 boyuan.md",
+    "notes/开发文档 2.0.md",
+    "notes/转型.md",
     "others/mlfqs.md",
     "others",
-    "docs-1.5/2025-11-24.md",
     "MyPresentation.md",
     "Pasted image 20251109205436.png",
-    "docs-1.5/后续方向.md",
     "docs-1.5/2025-11-18.md",
     "docs/2025-11-09.md",
     "一些想法.md",
@@ -260,8 +264,6 @@
     "Pasted image 20251119221211.png",
     "Pasted image 20251119220915.png",
     "Pasted image 20251119220048.png",
-    "Pasted image 20251119220038.png",
-    "notes/开发文档 2.0.md",
     "notes/学习文档 - S1.md",
     "notes/留待后续优化.md",
     "notes/学习文档 - S3.md",
@@ -276,8 +278,6 @@
     "docs/2025-11-15.md",
     "docs/2025-11-12.md",
     "docs/today.md.md",
-    "docs/2025-11-11.md",
-    "docs/2025-11-10.md",
     "docs",
     "docs-1.5",
     "未命名 3.base",
