@@ -92,6 +92,18 @@ services:
     networks:
       - app_net
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"  # 暴露给宿主机，方便你本地运行的 Java 代码连接
+    command: redis-server --save 60 1 --loglevel warning # 每60秒至少有1个key变动就持久化
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_net
+
 
 
 networks:
@@ -101,4 +113,5 @@ networks:
 volumes:
   kafka_data:
   postgres_data:
+  redis_data:
 

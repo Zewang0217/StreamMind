@@ -22,7 +22,12 @@ spring:
     admin:
       fail-fast: true
 
-
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 3000ms
 
 # 日志配置
 logging:
@@ -69,4 +74,12 @@ datasources:
         source: "zhihu"
         category: "pin-daily"
         fetch-interval: 60  # 60分钟抓取一次
+        enabled: true
+
+      # 36氪
+      - name: "36kr-newsflashes"
+        route: "/36kr/newsflashes"
+        source: "36kr"
+        category: "newsflashes"
+        fetch-interval: 10  # 10分钟抓取一次
         enabled: true

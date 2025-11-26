@@ -38,12 +38,13 @@ public class RSSHubDataCollector {
     private final KafkaTemplate<String, SocialMessage> kafkaTemplate;
     private final RSSHubRssParser rssParser;
     private final RSSHubConfig rssHubConfig;
+    private final DeduplicationService deduplicationService;
 
     // 记录每个feed的上次抓取时间，用于控制抓取频率
     private final Map<String, LocalDateTime> lastFetchTime = new ConcurrentHashMap<>();
 
-    // 定时调度，每分钟一次，检查并抓取需要更新的RSSHub feeds
-    @Scheduled(fixedDelay = 60000) // 每分钟检查一次
+    // 定时调度，每小时一次，检查并抓取需要更新的RSSHub feeds
+    @Scheduled(fixedDelay = 3600000) // 每小时检查一次
     public void scheduleFeeds() {
         // 检查RSSHub数据收集是否启用
         if (!rssHubConfig.isEnabled()) {
@@ -113,10 +114,14 @@ public class RSSHubDataCollector {
                 .block();
 
             // 添加RSS内容长度日志
-            log.info("获取到RSS内容长度: {}", rssContent != null ? rssContent.length() : 0);
+//            log.info("获取到RSS内容长度: {}", rssContent != null ? rssContent.length() : 0);
 
             // 解析RSS
             var items = rssParser.parseRss(rssContent);
+
+            // 去重计数器
+            int newItemsCount = 0;
+            int duplicateItemsCount = 0;
 
             // 添加调试信息
             log.info("解析到 {} 条数据项", items.size());
@@ -130,16 +135,27 @@ public class RSSHubDataCollector {
 
             // 将解析后的数据转换为SocialMessage并发送到Kafka
              for (var item : items) {
-                SocialMessage message = convertToSocialMessage(item, config);
-//                 log.debug("准备发送消息到Kafka: messageId={}, source={}, topic={}；标题：{}",
-//                     message.messageId(), message.source(), message.topic(), item.getTitle());
-                 kafkaTemplate.send(KafkaConstants.SOCIAL_MESSAGES_TOPIC,
-                    message.messageId(), message);
-//                log.info("Sent RSSHub message: {}", message.messageId());
-            }
+                 // 1. 确定唯一标识符（优先使用链接，如果链接为空则使用标题）
+                 String uniqueIdentifier = item.getLink() + item.getTitle();
 
-            log.info("Successfully collected {} items from {}", items.size(), config.getName());
+                 // 2. 调用去重服务检测
+                 if (deduplicationService.isNewMessage(uniqueIdentifier)) {
+                     // 是新消息 -> 处理并发送
+                     SocialMessage message = convertToSocialMessage(item, config);
+                     kafkaTemplate.send(KafkaConstants.SOCIAL_MESSAGES_TOPIC,
+                         message.messageId(), message);
 
+                     newItemsCount++;
+                     // log.debug("新消息已推送: {}", item.getTitle());
+                 } else {
+                     // 重复消息，跳过
+                     duplicateItemsCount++;
+                     log.trace("重复消息已跳过: {}", item.getTitle());
+                 }
+             }
+
+            log.info("采集完成 [{}]: 共 {} 条, 新增 {} 条, 重复 {} 条",
+                config.getName(), items.size(), newItemsCount, duplicateItemsCount);
         } catch (Exception e) {
             log.error("Error collecting RSSHub feed {}: {}", config.getName(), e.getMessage());
         }
