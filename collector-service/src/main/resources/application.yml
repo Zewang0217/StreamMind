@@ -67,7 +67,7 @@ datasources:
         route: "/zhihu/hot"
         source: "zhihu"
         category: "hot"
-        fetch-interval: 20  # 20分钟抓取一次
+        fetch-interval: 200  # 20分钟抓取一次
         enabled: true
       - name: "zhihu-pin-daily"
         route: "/zhihu/pin/daily"
@@ -81,5 +81,12 @@ datasources:
         route: "/36kr/newsflashes"
         source: "36kr"
         category: "newsflashes"
-        fetch-interval: 10  # 10分钟抓取一次
+        fetch-interval: 100  # 10分钟抓取一次
+        enabled: true
+      # 少数派
+      - name: "sspai-index"
+        route: "/sspai/index"
+        source: "sspai"
+        category: "科技"
+        fetch-interval: 300  # 30分钟抓取一次
         enabled: true
