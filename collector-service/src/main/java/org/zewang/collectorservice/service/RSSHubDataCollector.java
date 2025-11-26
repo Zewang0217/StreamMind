@@ -2,16 +2,14 @@ package org.zewang.collectorservice.service;
 
 
 import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.zewang.collectorservice.model.RSSHubConfig;
@@ -43,6 +41,15 @@ public class RSSHubDataCollector {
 
     // 记录每个feed的上次抓取时间，用于控制抓取频率
     private final Map<String, LocalDateTime> lastFetchTime = new ConcurrentHashMap<>();
+    
+    // 并行处理线程池
+    private final ExecutorService executorService = new ThreadPoolExecutor(
+            Runtime.getRuntime().availableProcessors() * 2, // 核心线程数（I/O密集型任务设为CPU核心数的2倍）
+            Runtime.getRuntime().availableProcessors() * 4, // 最大线程数
+            60L, TimeUnit.SECONDS,                          // 空闲线程超时时间
+            new LinkedBlockingQueue<>(100),                // 工作队列
+            new ThreadPoolExecutor.CallerRunsPolicy()      // 拒绝策略（调用者执行）
+    );
 
     // 定时调度，每小时一次，检查并抓取需要更新的RSSHub feeds
     @Scheduled(fixedDelay = 3600000) // 每小时检查一次
@@ -55,21 +62,44 @@ public class RSSHubDataCollector {
 
         log.info("检查RSSHub feeds");
 
-        // 遍历所有配置的feeds
-        for (RSSHubFeedConfig feedConfig : rssHubConfig.getFeeds()) {
-            // 检查当前feed是否需要抓取
-            if (shouldFetchFeed(feedConfig)) {
-                log.info("正在检查 feed: " + feedConfig.getName());
-
-                try {
-                    // 抓取feed
-                    collectFeed(feedConfig, rssHubConfig.getUrl());
-                    // 更新上次抓取时间
-                    lastFetchTime.put(feedConfig.getName(), LocalDateTime.now());
-                } catch (Exception e) {
-                    log.error("收集feed {} 发生错误 ： {}", feedConfig.getName(), e.getMessage());
-                }
-            }
+        // 收集需要抓取的feed
+        List<RSSHubFeedConfig> feedsToFetch = rssHubConfig.getFeeds().stream()
+                .filter(this::shouldFetchFeed)
+                .collect(Collectors.toList());
+        
+        log.info("发现 {} 个需要抓取的feed", feedsToFetch.size());
+        
+        if (feedsToFetch.isEmpty()) {
+            return;
+        }
+        
+        // 使用CompletableFuture并行处理每个feed
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        
+        for (RSSHubFeedConfig feedConfig : feedsToFetch) {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(
+                () -> {
+                    try {
+                        log.info("正在抓取 feed: {}", feedConfig.getName());
+                        // 抓取feed
+                        collectFeed(feedConfig, rssHubConfig.getUrl());
+                        // 更新上次抓取时间
+                        lastFetchTime.put(feedConfig.getName(), LocalDateTime.now());
+                    } catch (Exception e) {
+                        log.error("收集feed {} 发生错误 ： {}", feedConfig.getName(), e.getMessage());
+                    }
+                }, 
+                executorService
+            );
+            futures.add(future);
+        }
+        
+        // 等待所有并行任务完成
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            log.info("所有feed抓取任务已完成");
+        } catch (Exception e) {
+            log.error("并行任务执行过程中发生异常: {}", e.getMessage());
         }
     }
 
@@ -134,26 +164,26 @@ public class RSSHubDataCollector {
                 });
             }
 
-            // 将解析后的数据转换为SocialMessage并发送到Kafka
-             for (var item : items) {
-                 // 1. 确定唯一标识符（优先使用链接，如果链接为空则使用标题）
-                 String uniqueIdentifier = item.getLink() + item.getTitle();
-
-                 // 2. 调用去重服务检测
-                 if (deduplicationService.isNewMessage(uniqueIdentifier)) {
-                     // 是新消息 -> 处理并发送
-                     SocialMessage message = convertToSocialMessage(item, config);
-                     kafkaTemplate.send(KafkaConstants.SOCIAL_MESSAGES_TOPIC,
-                         message.messageId(), message);
-
-                     newItemsCount++;
-                     // log.debug("新消息已推送: {}", item.getTitle());
-                 } else {
-                     // 重复消息，跳过
-                     duplicateItemsCount++;
-                     log.trace("重复消息已跳过: {}", item.getTitle());
-                 }
-             }
+            // 使用并行流处理消息转换和发送（内部使用ForkJoinPool）
+            Map<Boolean, Long> stats = items.stream().parallel()
+                .collect(Collectors.partitioningBy(item -> {
+                    // 1. 确定唯一标识符（优先使用链接，如果链接为空则使用标题）
+                    String uniqueIdentifier = item.getLink() + item.getTitle();
+                    
+                    // 2. 调用去重服务检测
+                    boolean isNew = deduplicationService.isNewMessage(uniqueIdentifier);
+                    
+                    if (isNew) {
+                        // 是新消息 -> 处理并发送
+                        SocialMessage message = convertToSocialMessage(item, config);
+                        kafkaTemplate.send(KafkaConstants.SOCIAL_MESSAGES_TOPIC,
+                            message.messageId(), message);
+                    }
+                    return isNew;
+                }, Collectors.counting()));
+                
+            newItemsCount = stats.getOrDefault(true, 0L).intValue();
+            duplicateItemsCount = stats.getOrDefault(false, 0L).intValue();
 
             log.info("采集完成 [{}]: 共 {} 条, 新增 {} 条, 重复 {} 条",
                 config.getName(), items.size(), newItemsCount, duplicateItemsCount);
