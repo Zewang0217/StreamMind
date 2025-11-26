@@ -90,3 +90,51 @@ datasources:
         category: "科技"
         fetch-interval: 300  # 30分钟抓取一次
         enabled: true
+
+      # 掘金
+      - name: "juejin-backend-weekly"
+        route: "/juejin/trending/backend/weekly"
+        source: "juejin"
+        category: "backend"
+        fetch-interval: 60  # 60分钟抓取一次
+        enabled: true
+      - name: "juejin-ai-weekly"
+        route: "/juejin/trending/ai/weekly"
+        source: "juejin"
+        category: "ai"
+        fetch-interval: 60  # 60分钟抓取一次
+        enabled: true
+      - name: "juejin-product-weekly"
+        route: "/juejin/trending/product/weekly"
+        source: "juejin"
+        category: "product"
+        fetch-interval: 60  # 60分钟抓取一次
+        enabled: true
+      - name: "juejin-freebie-weekly"
+        route: "/juejin/trending/freebie/weekly"
+        source: "juejin"
+        category: "freebie"
+        fetch-interval: 60  # 60分钟抓取一次
+        enabled: true
+
+        # TODO: 掘金分类部分
+
+      # hugging face
+      - name: "huggingface-daily-papers"
+        route: "/huggingface/daily-papers"
+        source: "huggingface"
+        category: "papers"
+        fetch-interval: 1440  # 24小时抓取一次（1440分钟）
+        enabled: true
+      - name: "huggingface-weekly-papers"
+        route: "/huggingface/daily-papers/week"
+        source: "huggingface"
+        category: "papers"
+        fetch-interval: 10080  # 7天抓取一次（10080分钟）
+        enabled: true
+      - name: "huggingface-monthly-papers"
+        route: "/huggingface/daily-papers/month"
+        source: "huggingface"
+        category: "papers"
+        fetch-interval: 43200  # 30天抓取一次（43200分钟）
+        enabled: true

@@ -128,6 +128,11 @@ public class RSSHubRssParser {
             return plainText.substring(0, Math.min(200, plainText.length()));
         }
 
+        else if (item.getLink().contains("juejin.cn")) {
+            String plainText = Jsoup.parse(rawDesc).text();
+            return plainText.substring(0, Math.min(200, plainText.length()));
+        }
+
         // 默认：返回纯文本
         return Jsoup.parse(rawDesc).text();
     }
