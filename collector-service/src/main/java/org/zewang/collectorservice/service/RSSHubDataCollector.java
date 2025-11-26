@@ -17,6 +17,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.zewang.collectorservice.model.RSSHubConfig;
 import org.zewang.collectorservice.model.RSSHubFeedConfig;
 import org.zewang.collectorservice.rsshubPaerser.RSSHubRssParser;
+import org.zewang.common.constant.ContentFetchStatus;
 import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.social_message.SocialMessage;
 
@@ -181,6 +182,8 @@ public class RSSHubDataCollector {
             .timestamp(item.getPubDate() != null ? item.getPubDate() : LocalDateTime.now())
             .content(item.getTitle() + " - " + item.getDescription())
             .interactionCount(interactionCount)
+            .url(item.getLink())
+            .contentFetchStatus(ContentFetchStatus.NOT_FETCHED)
             .build();
     }
 
