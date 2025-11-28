@@ -138,3 +138,12 @@ datasources:
         category: "papers"
         fetch-interval: 43200  # 30天抓取一次（43200分钟）
         enabled: true
+
+# 大模型API配置 - 生产环境使用环境变量，本地开发使用application-local.yml
+volcengine:
+  api:
+    key: ""
+    secret: ""
+    endpoint: https://ark.cn-beijing.volces.com/api/v3/chat/completions
+  model:
+    id: doubao-seed-1-6-flash-250828
