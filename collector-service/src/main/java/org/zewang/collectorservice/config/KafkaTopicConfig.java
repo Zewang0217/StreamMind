@@ -46,4 +46,6 @@ public class KafkaTopicConfig {
         return new NewTopic(KafkaConstants.ALERT_EVENTS_TOPIC, 3, (short) 1);
     }
 
+
+
 }

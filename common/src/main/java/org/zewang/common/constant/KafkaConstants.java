@@ -18,6 +18,7 @@ public class KafkaConstants {
     public static final String SOCIAL_MESSAGES_TOPIC = "social-messages";
     public static final String ANALYZED_STREAM_TOPIC = "analyzed-stream";
     public static final String ALERT_EVENTS_TOPIC = "alert-events";
+    public static final String SCORED_ARTICLES_TOPIC = "scored-articles";
 
 
     // 默认配置值
