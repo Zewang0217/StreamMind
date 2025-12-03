@@ -58,14 +58,14 @@ public class RSSHubDataCollector {
     }
 
     // 火山方舟API配置
-    // 修改RSSHubDataCollector.java中的配置获取方式
-    @Value("${volcengine.api.key:${VOLCENGINE_API_KEY:}}")
+    // 直接读取环境变量，如果环境变量不存在则使用application.yml中的配置
+    @Value("${VOLCENGINE_API_KEY:${volcengine.api.key:}}")
     private String volcengineApiKey;
-    @Value("${volcengine.api.secret:${VOLCENGINE_API_SECRET:}}")
+    @Value("${VOLCENGINE_API_SECRET:${volcengine.api.secret:}}")
     private String volcengineApiSecret;
-    @Value("${volcengine.api.endpoint:${VOLCENGINE_API_ENDPOINT:https://ark.cn-beijing.volces.com/api/v3/chat/completions}}")
+    @Value("${VOLCENGINE_API_ENDPOINT:${volcengine.api.endpoint:https://ark.cn-beijing.volces.com/api/v3/chat/completions}}")
     private String volcengineApiEndpoint;
-    @Value("${volcengine.model.id:${VOLCENGINE_MODEL_ID:doubao-seed-1-6-flash-250828}}")
+    @Value("${VOLCENGINE_MODEL_ID:${volcengine.model.id:doubao-seed-1-6-flash-250828}}")
     private String modelId;
 
     // 记录每个feed的上次抓取时间，用于控制抓取频率
