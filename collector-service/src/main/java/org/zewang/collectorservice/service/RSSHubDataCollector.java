@@ -453,6 +453,7 @@ public class RSSHubDataCollector {
                                 .link(originalMessage.url())
                                 .category(category)
                                 .keyWords(keywords)
+                                .score(score)
                                 .pubDate(originalMessage.timestamp())
                                 .status(ContentFetchStatus.NOT_FETCHED)
                                 .build();

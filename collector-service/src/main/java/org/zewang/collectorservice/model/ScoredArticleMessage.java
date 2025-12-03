@@ -20,6 +20,7 @@ public record ScoredArticleMessage(
     String content,
     String link,
     String category,
+    int score,
     List<String> keyWords,
     LocalDateTime pubDate,
     ContentFetchStatus status
