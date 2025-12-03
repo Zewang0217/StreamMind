@@ -17,7 +17,7 @@ import org.zewang.common.constant.ContentFetchStatus;
 @Builder
 public record ScoredArticleMessage(
     String messageId,
-    String title,
+    String content,
     String link,
     String category,
     List<String> keyWords,
