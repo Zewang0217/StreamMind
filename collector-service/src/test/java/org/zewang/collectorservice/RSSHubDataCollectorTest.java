@@ -1,4 +1,3 @@
-// src/test/java/org/zewang/collectorservice/RSSHubDataCollectorTest.java
 package org.zewang.collectorservice;
 
 import org.junit.jupiter.api.BeforeEach;

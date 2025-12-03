@@ -13,11 +13,12 @@ public class KafkaConstants {
 
     // Topic名称常量
     public static final String CHAT_MESSAGES_TOPIC = "chat-messages";
-    public static final String SENTIMENT_SCORES_TOPIC = "sentiment-scores";
-    public static final String WARNING_ALERTS_TOPIC = "warning-alerts";
+//    public static final String SENTIMENT_SCORES_TOPIC = "sentiment-scores";
+//    public static final String WARNING_ALERTS_TOPIC = "warning-alerts";
     public static final String SOCIAL_MESSAGES_TOPIC = "social-messages";
     public static final String ANALYZED_STREAM_TOPIC = "analyzed-stream";
     public static final String ALERT_EVENTS_TOPIC = "alert-events";
+    public static final String SCORED_ARTICLES_TOPIC = "scored-articles";
 
 
     // 默认配置值

@@ -7,7 +7,7 @@ spring:
   main:
     web-application-type: none # 纯后台任务，不处理HTTP请求
   profiles:
-    active: rsshub-data
+    active: local,rsshub-data
   kafka:
     bootstrap-servers: localhost:9094
     producer:
@@ -42,44 +42,108 @@ datasources:
     enabled: true
     url: http://localhost:1200
     feeds:
-      # B站信息源
-      - name: "bilibili-weekly"
-        route: "/bilibili/weekly"
-        source: "bilibili"
-        category: "weekly"
+#      # B站信息源
+#      - name: "bilibili-weekly"
+#        route: "/bilibili/weekly"
+#        source: "bilibili"
+#        category: "weekly"
+#        fetch-interval: 60  # 60分钟抓取一次
+#        enabled: true
+#      - name: "bilibili-popular"
+#        route: "/bilibili/popular/all"
+#        source: "bilibili"
+#        category: "popular"
+#        fetch-interval: 30  # 30分钟抓取一次
+#        enabled: true
+#      - name: "bilibili-hot-search"
+#        route: "/bilibili/hot-search"
+#        source: "bilibili"
+#        category: "hot-search"
+#        fetch-interval: 15  # 15分钟抓取一次
+#        enabled: true
+#
+#      # 知乎信息源
+#      - name: "zhihu-hot"
+#        route: "/zhihu/hot"
+#        source: "zhihu"
+#        category: "hot"
+#        fetch-interval: 200  # 20分钟抓取一次
+#        enabled: true
+#      - name: "zhihu-pin-daily"
+#        route: "/zhihu/pin/daily"
+#        source: "zhihu"
+#        category: "pin-daily"
+#        fetch-interval: 60  # 60分钟抓取一次
+#        enabled: true
+#
+#      # 36氪
+#      - name: "36kr-newsflashes"
+#        route: "/36kr/newsflashes"
+#        source: "36kr"
+#        category: "newsflashes"
+#        fetch-interval: 100  # 10分钟抓取一次
+#        enabled: true
+#      # 少数派
+#      - name: "sspai-index"
+#        route: "/sspai/index"
+#        source: "sspai"
+#        category: "科技"
+#        fetch-interval: 300  # 30分钟抓取一次
+#        enabled: true
+
+      # 掘金
+      - name: "juejin-backend-weekly"
+        route: "/juejin/trending/backend/weekly"
+        source: "juejin"
+        category: "backend"
         fetch-interval: 60  # 60分钟抓取一次
         enabled: true
-      - name: "bilibili-popular"
-        route: "/bilibili/popular/all"
-        source: "bilibili"
-        category: "popular"
-        fetch-interval: 30  # 30分钟抓取一次
-        enabled: true
-      - name: "bilibili-hot-search"
-        route: "/bilibili/hot-search"
-        source: "bilibili"
-        category: "hot-search"
-        fetch-interval: 15  # 15分钟抓取一次
-        enabled: true
-
-      # 知乎信息源
-      - name: "zhihu-hot"
-        route: "/zhihu/hot"
-        source: "zhihu"
-        category: "hot"
-        fetch-interval: 20  # 20分钟抓取一次
-        enabled: true
-      - name: "zhihu-pin-daily"
-        route: "/zhihu/pin/daily"
-        source: "zhihu"
-        category: "pin-daily"
+      - name: "juejin-ai-weekly"
+        route: "/juejin/trending/ai/weekly"
+        source: "juejin"
+        category: "ai"
         fetch-interval: 60  # 60分钟抓取一次
         enabled: true
+#      - name: "juejin-product-weekly"
+#        route: "/juejin/trending/product/weekly"
+#        source: "juejin"
+#        category: "product"
+#        fetch-interval: 60  # 60分钟抓取一次
+#        enabled: true
+#      - name: "juejin-freebie-weekly"
+#        route: "/juejin/trending/freebie/weekly"
+#        source: "juejin"
+#        category: "freebie"
+#        fetch-interval: 60  # 60分钟抓取一次
+#        enabled: true
 
-      # 36氪
-      - name: "36kr-newsflashes"
-        route: "/36kr/newsflashes"
-        source: "36kr"
-        category: "newsflashes"
-        fetch-interval: 10  # 10分钟抓取一次
-        enabled: true
+        # TODO: 掘金分类部分
+
+#      # hugging face
+#      - name: "huggingface-daily-papers"
+#        route: "/huggingface/daily-papers"
+#        source: "huggingface"
+#        category: "papers"
+#        fetch-interval: 1440  # 24小时抓取一次（1440分钟）
+#        enabled: true
+#      - name: "huggingface-weekly-papers"
+#        route: "/huggingface/daily-papers/week"
+#        source: "huggingface"
+#        category: "papers"
+#        fetch-interval: 10080  # 7天抓取一次（10080分钟）
+#        enabled: true
+#      - name: "huggingface-monthly-papers"
+#        route: "/huggingface/daily-papers/month"
+#        source: "huggingface"
+#        category: "papers"
+#        fetch-interval: 43200  # 30天抓取一次（43200分钟）
+#        enabled: true
+
+# 大模型API配置 - 生产环境使用环境变量，本地开发使用application-local.yml
+volcengine:
+  api:
+    key: ""
+    secret: ""
+    endpoint: https://ark.cn-beijing.volces.com/api/v3/chat/completions
+  model:
+    id: doubao-seed-1-6-flash-250828

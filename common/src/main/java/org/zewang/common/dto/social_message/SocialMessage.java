@@ -2,8 +2,10 @@ package org.zewang.common.dto.social_message;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 import lombok.Builder;
+import org.zewang.common.constant.ContentFetchStatus;
 
 /**
  * @author "Zewang"
@@ -35,6 +37,9 @@ public record SocialMessage (
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     LocalDateTime timestamp,
     String content,
-    int interactionCount
+    int interactionCount,
+    @JsonProperty(defaultValue = "NOT_FETCHED")
+    ContentFetchStatus contentFetchStatus,
+    String url // 消息来源url
 
 ) {}

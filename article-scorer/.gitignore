@@ -31,14 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-/vault/.obsidian/plugins/obsidian-advanced-slides/plugin/math/mathjax/input/tex/extensions/action.js
-
-### 敏感配置文件 ###
-**/application-local.yml
-**/application-dev.yml
-**/application-prod.yml
-
-### obsidian vault ###
-/vault/.obsidian/
-/vault/others/
-/vault/Pasted image 20251126181211.png

@@ -88,29 +88,29 @@ public class RSSHubRssParser {
         // B站：description里有iframe+图片+文字，只保留文字
         if (item.getLink().contains("bilibili.com")) {
             // 先解码HTML实体
-        String decodedDesc = org.jsoup.parser.Parser.unescapeEntities(rawDesc, true);
-        // 用Jsoup提取纯文本
-        String text = Jsoup.parse(decodedDesc).text();
+            String decodedDesc = org.jsoup.parser.Parser.unescapeEntities(rawDesc, true);
+            // 用Jsoup提取纯文本
+            String text = Jsoup.parse(decodedDesc).text();
 
-        // 查找"br"后的文本内容（通常是实际内容）
-        int brIndex = text.indexOf("br");
-        if (brIndex != -1 && brIndex < text.length() - 3) {
-            String content = text.substring(brIndex + 3).trim();
-            // 如果还有作者信息，进一步处理
-            if (item.getAuthor() != null && content.contains(item.getAuthor())) {
-                int authorIndex = content.indexOf(item.getAuthor());
-                if (authorIndex != -1) {
-                    content = content.substring(authorIndex + item.getAuthor().length()).trim();
+            // 查找"br"后的文本内容（通常是实际内容）
+            int brIndex = text.indexOf("br");
+            if (brIndex != -1 && brIndex < text.length() - 3) {
+                String content = text.substring(brIndex + 3).trim();
+                // 如果还有作者信息，进一步处理
+                if (item.getAuthor() != null && content.contains(item.getAuthor())) {
+                    int authorIndex = content.indexOf(item.getAuthor());
+                    if (authorIndex != -1) {
+                        content = content.substring(authorIndex + item.getAuthor().length()).trim();
+                    }
                 }
+                return content.substring(0, Math.min(200, content.length()));
             }
-            return content.substring(0, Math.min(200, content.length()));
-        }
-        return text.substring(0, Math.min(200, text.length()));
+            return text.substring(0, Math.min(200, text.length()));
 
         }
 
         // 知乎处理
-        if (item.getLink().contains("zhihu.com")) {
+        else if (item.getLink().contains("zhihu.com")) {
             String plain = rawDesc.replaceAll("<[^>]*>", "");
             String result = plain.substring(0, Math.min(300, plain.length()));
             log.debug("知乎内容解析 - 原始长度: {}, 解析后长度: {}, 内容预览: {}",
@@ -118,9 +118,20 @@ public class RSSHubRssParser {
             return result;
         }
 
-        if (item.getLink().contains("36kr.com")) {
+        else if (item.getLink().contains("36kr.com")) {
             String plainText = Jsoup.parse(rawDesc).text();
-            return plainText.substring(0, Math.min(200, plainText.length()));        }
+            return plainText.substring(0, Math.min(200, plainText.length()));
+        }
+
+        else if (item.getLink().contains("sspai")) {
+            String plainText = Jsoup.parse(rawDesc).text();
+            return plainText.substring(0, Math.min(200, plainText.length()));
+        }
+
+        else if (item.getLink().contains("juejin.cn")) {
+            String plainText = Jsoup.parse(rawDesc).text();
+            return plainText.substring(0, Math.min(200, plainText.length()));
+        }
 
         // 默认：返回纯文本
         return Jsoup.parse(rawDesc).text();
