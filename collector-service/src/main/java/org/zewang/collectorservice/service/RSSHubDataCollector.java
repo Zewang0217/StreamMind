@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 import javax.management.openmbean.OpenMBeanAttributeInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.buf.ByteChunk;
+import org.apache.tomcat.util.buf.ByteChunk.BufferOverflowException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -23,10 +25,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.zewang.collectorservice.model.RSSHubConfig;
 import org.zewang.collectorservice.model.RSSHubFeedConfig;
+import org.zewang.collectorservice.model.ScoredArticleMessage;
 import org.zewang.collectorservice.rsshubPaerser.RSSHubRssParser;
 import org.zewang.common.constant.ContentFetchStatus;
 import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.social_message.SocialMessage;
+import org.zewang.common.exception.BusinessException;
+import org.zewang.common.exception.ErrorCode;
 
 /**
  * @author "Zewang"
@@ -43,6 +48,7 @@ import org.zewang.common.dto.social_message.SocialMessage;
 public class RSSHubDataCollector {
 
     private final WebClient webClient;
+    private final KafkaTemplate<String, ScoredArticleMessage> kafkaTemplate1;
     private final KafkaTemplate<String, SocialMessage> kafkaTemplate;
     private final RSSHubRssParser rssParser;
     private final RSSHubConfig rssHubConfig;
@@ -313,42 +319,47 @@ public class RSSHubDataCollector {
             log.warn("没有配置火山方舟API密钥，返回模拟数据");
             return generateMockResponse();
         }
+        HttpResponse<String> response = null;
 
-        // 构建请求体
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", modelId);
+        try {
+            // 构建请求体
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", modelId);
 
-        List<Map<String, String>> messages = new ArrayList<>();
-        Map<String, String> systemMessage = new HashMap<>();
-        systemMessage.put("role", "system");
-        systemMessage.put("content", "你是一个专业的技术内容评估助手，擅长对文章进行评分、分类和关键词提取。");
-        messages.add(systemMessage);
+            List<Map<String, String>> messages = new ArrayList<>();
+            Map<String, String> systemMessage = new HashMap<>();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", "你是一个专业的技术内容评估助手，擅长对文章进行评分、分类和关键词提取。");
+            messages.add(systemMessage);
 
-        Map<String, String> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("content", prompt);
-        messages.add(userMessage);
+            Map<String, String> userMessage = new HashMap<>();
+            userMessage.put("role", "user");
+            userMessage.put("content", prompt);
+            messages.add(userMessage);
 
-        requestBody.put("messages", messages);
-        requestBody.put("temperature", 0.0);
+            requestBody.put("messages", messages);
+            requestBody.put("temperature", 0.0);
 
-        // 转为json
-        String jsonBody = new ObjectMapper().writeValueAsString(requestBody);
+            // 转为json
+            String jsonBody = new ObjectMapper().writeValueAsString(requestBody);
 
-        // 创建HTTP客户端和请求
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(volcengineApiEndpoint))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + volcengineApiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-            .build();
+            // 创建HTTP客户端和请求
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(volcengineApiEndpoint))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + volcengineApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
 
-        // 发送请求并获取响应
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            // 发送请求并获取响应
+            response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() != 200) {
-            throw new IOException("API调用失败：" + response.statusCode() + "-" + response.body());
+            if (response.statusCode() != 200) {
+                throw new IOException("API调用失败：" + response.statusCode() + "-" + response.body());
+            }
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.AI_CALL_ERROR);
         }
 
         return response.body();
@@ -410,34 +421,53 @@ public class RSSHubDataCollector {
 
     // 处理文章评分数组
     private void processArticlesArray(JsonNode articlesArray, List<SocialMessage> batch) {
-        Map<String, SocialMessage> messageMap = batch.stream()
-            .collect(Collectors.toMap(SocialMessage::messageId, msg -> msg));
+        try {
+            Map<String, SocialMessage> messageMap = batch.stream()
+                .collect(Collectors.toMap(SocialMessage::messageId, msg -> msg));
 
-        for (JsonNode articleNode : articlesArray) {
-            if (articleNode.has("article_identifier") && articleNode.has("score") && articleNode.has("category")) {
-                String messageId = articleNode.get("article_identifier").asText();
-                SocialMessage originalMessage = messageMap.get(messageId);
+            for (JsonNode articleNode : articlesArray) {
+                if (articleNode.has("article_identifier") && articleNode.has("score") && articleNode.has("category")) {
+                    String messageId = articleNode.get("article_identifier").asText();
+                    SocialMessage originalMessage = messageMap.get(messageId);
 
-                if (originalMessage != null) {
-                    int score = articleNode.get("score").asInt();
-                    String category = articleNode.get("category").asText();
+                    if (originalMessage != null) {
+                        int score = articleNode.get("score").asInt();
+                        String category = articleNode.get("category").asText();
 
-                    // 提取关键词
-                    List<String> keywords = new ArrayList<>();
-                    if (articleNode.has("keywords") && articleNode.get("keywords").isArray()) {
-                        for (JsonNode keywordNode : articleNode.get("keywords")) {
-                            keywords.add(keywordNode.asText());
+                        // 提取关键词
+                        List<String> keywords = new ArrayList<>();
+                        if (articleNode.has("keywords") && articleNode.get("keywords").isArray()) {
+                            for (JsonNode keywordNode : articleNode.get("keywords")) {
+                                keywords.add(keywordNode.asText());
+                            }
                         }
+
+                        log.info("文章 {} 评分: {}, 分类: {}, 关键词: {}",
+                            messageId, score, category, keywords);
+
+                        // 创建ScoredArticleMessage对象
+                        ScoredArticleMessage scoredArticleMessage =
+                            ScoredArticleMessage.builder()
+                                .messageId(messageId)
+                                .content(originalMessage.content())
+                                .link(originalMessage.url())
+                                .category(category)
+                                .keyWords(keywords)
+                                .pubDate(originalMessage.timestamp())
+                                .status(ContentFetchStatus.NOT_FETCHED)
+                                .build();
+
+                        // 发送到kafka
+                        kafkaTemplate1.send(
+                            KafkaConstants.SCORED_ARTICLES_TOPIC, messageId, scoredArticleMessage
+                        );
+                        log.info("已发送文章 {} 评分信息到kafka", messageId);
                     }
-
-                    log.info("文章 {} 评分: {}, 分类: {}, 关键词: {}",
-                        messageId, score, category, keywords);
-
-                    // 这里应该创建ScoredArticleMessage并发送到Kafka
-                    // 由于我们还没有创建ScoredArticleMessage类，暂时只记录日志
-                    // TODO: 创建ScoredArticleMessage对象并发送到Kafka
                 }
             }
+        } catch (Exception e) {
+            log.error("处理文章评分数据时出错: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.SCORED_ARTICLES_PROCESS_ERROR, e.getMessage());
         }
     }
 
@@ -455,10 +485,12 @@ public class RSSHubDataCollector {
                 JsonNode articlesArray = new ObjectMapper().readTree(jsonPart);
                 if (articlesArray.isArray()) {
                     processArticlesArray(articlesArray, batch);
+                } else {
+                    log.error("Extracted JSON is not an array");
                 }
             }
         } catch (Exception e) {
-            log.error("提取JSON失败: {}", e.getMessage(), e);
+            log.error("Error extracting JSON: {}", e.getMessage(), e);
         }
     }
 
@@ -494,7 +526,7 @@ public class RSSHubDataCollector {
      * @return 话题标签
      */
     private String extractTopic(org.zewang.collectorservice.model.RSSHubItem item, RSSHubFeedConfig config) {
-        // 根据配置和项目内容提取话题
+        // TODO: 修改为实际需求
         String category = config.getCategory();
         String title = item.getTitle();
 
