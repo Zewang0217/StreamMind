@@ -22,7 +22,9 @@ public enum ErrorCode {
     // 业务相关错误码 (3000-3999)
     CHAT_MESSAGE_INVALID("3000", "聊天消息无效"),
     SENTIMENT_ANALYSIS_ERROR("3001", "情感分析失败"),
-    ALERT_GENERATION_ERROR("3002", "预警生成失败");
+    ALERT_GENERATION_ERROR("3002", "预警生成失败"),
+    SCORED_ARTICLES_PROCESS_ERROR("3003", "评分文章并发送到kafka时出错"),
+    AI_CALL_ERROR("3004", "AI调用错误");
 
     private final String code;
     private final String message;
