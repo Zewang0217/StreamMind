@@ -19,6 +19,7 @@
     <module>collector-service</module>
     <module>stream-analyzer</module>
     <module>alert-service</module>
+    <module>article-scorer</module>
     <!-- 可以暂时保留旧模块，直到迁移完成 -->
     <!-- <module>producer</module> -->
     <!-- <module>stream</module> -->
