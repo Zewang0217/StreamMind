@@ -15,9 +15,8 @@ spring:
 #        spring.json.trusted.packages: "*"  # 数据库配置（供 consumer 模块使用）
   datasource:
     url: jdbc:postgresql://localhost:5432/streamdb
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:password}
-    driver-class-name: org.postgresql.Driver
+    username: admin
+    password: admin123
 
   jpa:
     hibernate:
