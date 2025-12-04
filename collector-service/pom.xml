@@ -106,12 +106,12 @@
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
 
-    <!--    H2 Database (for local development)-->
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <scope>runtime</scope>
-    </dependency>
+<!--    &lt;!&ndash;    H2 Database (for local development)&ndash;&gt;-->
+<!--    <dependency>-->
+<!--      <groupId>com.h2database</groupId>-->
+<!--      <artifactId>h2</artifactId>-->
+<!--      <scope>runtime</scope>-->
+<!--    </dependency>-->
 
     <!--    postgresql (for production)-->
     <dependency>
