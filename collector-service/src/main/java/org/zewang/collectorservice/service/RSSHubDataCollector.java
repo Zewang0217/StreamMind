@@ -12,11 +12,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
-import javax.management.openmbean.OpenMBeanAttributeInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.buf.ByteChunk;
-import org.apache.tomcat.util.buf.ByteChunk.BufferOverflowException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -30,8 +27,10 @@ import org.zewang.collectorservice.rsshubPaerser.RSSHubRssParser;
 import org.zewang.common.constant.ContentFetchStatus;
 import org.zewang.common.constant.KafkaConstants;
 import org.zewang.common.dto.social_message.SocialMessage;
+import org.zewang.common.entity.ScoredArticle;
 import org.zewang.common.exception.BusinessException;
 import org.zewang.common.exception.ErrorCode;
+import org.zewang.common.repository.ScoredArticleRepository;
 
 /**
  * @author "Zewang"
@@ -53,6 +52,7 @@ public class RSSHubDataCollector {
     private final RSSHubRssParser rssParser;
     private final RSSHubConfig rssHubConfig;
     private final DeduplicationService deduplicationService;
+    private final ScoredArticleRepository scoredArticleRepository;
 
     // 批量收集的文章队列
     private final ConcurrentLinkedQueue<SocialMessage> articlesToScore = new ConcurrentLinkedQueue<>();
@@ -463,7 +463,20 @@ public class RSSHubDataCollector {
                             KafkaConstants.SCORED_ARTICLES_TOPIC, messageId, scoredArticleMessage
                         );
                         log.info("已发送文章 {} 评分信息到kafka", messageId);
+
+                        // 将评分文章持久化到数据库
+                        ScoredArticle scoredArticle = new ScoredArticle();
+                        scoredArticle.setMessageId(messageId);
+                        scoredArticle.setLink(originalMessage.url());
+                        scoredArticle.setCategory(category);
+                        scoredArticle.setScore(score);
+                        scoredArticle.setKeywordsList(keywords);
+                        scoredArticle.setPubDate(originalMessage.timestamp());
+                        scoredArticleRepository.save(scoredArticle);
+                        log.info("已将文章 {} 评分信息持久化到数据库", messageId);
                     }
+
+
                 }
             }
         } catch (Exception e) {
@@ -575,6 +588,9 @@ public class RSSHubDataCollector {
         }
     }
 
+    // 将评分文章保存到数据库
+    private void saveScoredArticle(ScoredArticleMessage articleMessage, List<String> keywords) {
 
+    }
 
 }
