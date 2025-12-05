@@ -36,20 +36,20 @@ public class ScoredArticlePublisherImpl implements ScoredArticlePublisher {
         for (ScoredArticleMessage scoredArticle : scoredArticles) {
             // 发送到kafka
             kafkaTemplate1.send(
-                    KafkaConstants.SCORED_ARTICLES_TOPIC, scoredArticle.getMessageId(), scoredArticle
+                    KafkaConstants.SCORED_ARTICLES_TOPIC, scoredArticle.messageId(), scoredArticle
             );
-            log.info("已发送文章 {} 评分信息到kafka", scoredArticle.getMessageId());
+            log.info("已发送文章 {} 评分信息到kafka", scoredArticle.messageId());
 
             // 将评分文章持久化到数据库
             ScoredArticle article = new ScoredArticle();
-            article.setMessageId(scoredArticle.getMessageId());
-            article.setLink(scoredArticle.getLink());
-            article.setCategory(scoredArticle.getCategory());
-            article.setScore(scoredArticle.getScore());
-            article.setKeywordsList(scoredArticle.getKeyWords());
-            article.setPubDate(scoredArticle.getPubDate());
+            article.setMessageId(scoredArticle.messageId());
+            article.setLink(scoredArticle.link());
+            article.setCategory(scoredArticle.category());
+            article.setScore(scoredArticle.score());
+            article.setKeywordsList(scoredArticle.keyWords());
+            article.setPubDate(scoredArticle.pubDate());
             scoredArticleRepository.save(article);
-            log.info("已将文章 {} 评分信息持久化到数据库", scoredArticle.getMessageId());
+            log.info("已将文章 {} 评分信息持久化到数据库", scoredArticle.messageId());
         }
     }
 }

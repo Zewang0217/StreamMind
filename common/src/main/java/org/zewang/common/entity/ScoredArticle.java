@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Data;
+import lombok.Getter;
 
 /**
  * @author "Zewang"
@@ -21,6 +22,7 @@ import lombok.Data;
 @Entity
 @Table(name = "scored_articles")
 @Data
+@Getter
 public class ScoredArticle {
 
     @Id
